@@ -27,7 +27,7 @@ log_step "3/4 Overload phase"
 # Modify Dockerfile to increase Node.js memory limit
 log_step "Updating Dockerfile configuration"
 if ! grep -q "ENV NODE_OPTIONS=--max-old-space-size=4096" Dockerfile; then
-    if ! sed -i '/FROM.*node:.*AS build/,/WORKDIR \/app/ {/WORKDIR \/app/i ENV NODE_OPTIONS=--max-old-space-size=4096}' Dockerfile; then
+    if ! sed -i '/FROM.*node:.*AS build/,/WORKDIR \/app/s/WORKDIR \/app/ENV NODE_OPTIONS=--max-old-space-size=4096\nWORKDIR \/app/' Dockerfile; then
         echo "❌ Failed to update Dockerfile"
         exit 1
     fi
