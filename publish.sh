@@ -10,10 +10,27 @@ log_step() {
     echo "----------------------------------------"
 }
 
-# Variables
-REPO_NAME="*****"
-AWS_ACCOUNT="************"
-AWS_REGION="eu-west-1"
+# Load environment variables
+if [ -f .env ]; then
+    source .env
+else
+    echo "❌ .env file not found. Please copy .env.example to .env and fill in your values"
+    exit 1
+fi
+
+# Validate required variables
+for var in AWS_ACCOUNT AWS_REGION REPO_NAME; do
+    if [ -z "${!var}" ]; then
+        echo "❌ Required variable $var is not set"
+        exit 1
+    fi
+done
+
+# Set default values for optional variables
+IMAGE_TAG_SUFFIX=${IMAGE_TAG_SUFFIX:-"-custom"}
+BASE_IMAGE=${BASE_IMAGE:-"ghcr.io/open-webui/open-webui:main"}
+
+# Construct ECR URL
 ECR_URL="${AWS_ACCOUNT}.dkr.ecr.${AWS_REGION}.amazonaws.com"
 
 # Get version after entering directory
@@ -32,15 +49,15 @@ if ! aws ecr get-login-password --region ${AWS_REGION} | podman login --username
     exit 1
 fi
 
-if ! podman tag ghcr.io/open-webui/open-webui:main ${ECR_URL}/${REPO_NAME}:v${VERSION}-custom; then
+if ! podman tag ${BASE_IMAGE} ${ECR_URL}/${REPO_NAME}:v${VERSION}${IMAGE_TAG_SUFFIX}; then
     echo "❌ Failed to tag image"
     exit 1
 fi
 
-if ! podman push ${ECR_URL}/${REPO_NAME}:v${VERSION}-custom; then
+if ! podman push ${ECR_URL}/${REPO_NAME}:v${VERSION}${IMAGE_TAG_SUFFIX}; then
     echo "❌ Failed to push image"
     exit 1
 fi
 
 log_step "✅ Deployment completed successfully"
-echo "Image: ${ECR_URL}/${REPO_NAME}:v${VERSION}-custom"
+echo "Image: ${ECR_URL}/${REPO_NAME}:v${VERSION}${IMAGE_TAG_SUFFIX}"
