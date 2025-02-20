@@ -6,7 +6,7 @@ set -x    # Print commands before executing them (helpful for debugging)
 # Function to log steps
 log_step() {
     echo "----------------------------------------"
-    echo "🚀 $1"
+    echo "📦 $1"
     echo "----------------------------------------"
 }
 
@@ -26,3 +26,5 @@ if ! ./run-compose.sh --build; then
     echo "❌ Failed to build Docker image"
     exit 1
 fi
+
+echo "✅ Build successfully"

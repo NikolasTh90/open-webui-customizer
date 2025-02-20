@@ -6,7 +6,7 @@ set -x    # Print commands before executing them (helpful for debugging)
 # Function to log steps
 log_step() {
     echo "----------------------------------------"
-    echo "🚀 $1"
+    echo "📤 $1"
     echo "----------------------------------------"
 }
 
