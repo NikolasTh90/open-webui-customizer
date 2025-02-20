@@ -11,7 +11,7 @@ log_step() {
 }
 
 # 1. Clean submodule ............................................
-log_step "Cleaning open-webui submodule"
+log_step "1/2 Cleaning open-webui submodule"
 
 # Enter submodule directory
 cd open-webui || exit 1
@@ -31,7 +31,7 @@ git reset --hard HEAD
 cd ..
 
 # 2. Reset submodule to original state ..........................
-log_step "Resetting submodule to original state"
+log_step "2/2 Resetting submodule to original state"
 
 # Reset submodule to its committed state
 git submodule deinit -f open-webui

@@ -49,13 +49,15 @@ ECR_URL="${AWS_ACCOUNT}.dkr.ecr.${AWS_REGION}.amazonaws.com"
 VERSION=$(jq -r .version open-webui/package.json)
 echo "Building version: ${VERSION}"
 
-# 1. Check ......................................................
-log_step "Check if running"
-# TODO look docker images to validate
+# Enter submodule directory
+cd open-webui || exit 1
 
+# 1. Check ......................................................
+log_step "1/2 Check if running"
+# TODO4 look docker images to validate
 
 # 2. Deploy to ECR ..............................................
-log_step "Deploying to ECR"
+log_step "2/2 Deploying to ECR"
 if ! aws ecr get-login-password --region ${AWS_REGION} | ${CONTAINER_ENGINE} login --username AWS --password-stdin ${ECR_URL}; then
     echo "❌ Failed to login to ECR"
     exit 1

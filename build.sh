@@ -10,40 +10,18 @@ log_step() {
     echo "----------------------------------------"
 }
 
-# 1. Clone ......................................................
-log_step "Cloning repository"
-git submodule update
-cd open-webui
+# Enter submodule directory
+cd open-webui || exit 1
 
-# Get version after entering directory
-VERSION=$(jq -r .version package.json)
-echo "Building version: ${VERSION}"
-
-# 2. Customize ..................................................
-log_step "Customization phase"
-# Do your Things!
-
-# Modify Dockerfile to increase Node.js memory limit
-log_step "Updating Dockerfile configuration"
-if ! grep -q "ENV NODE_OPTIONS=--max-old-space-size=4096" Dockerfile; then
-    if ! sed -i '/WORKDIR \/app/i ENV NODE_OPTIONS=--max-old-space-size=4096' Dockerfile; then
-        echo "❌ Failed to update Dockerfile"
-        exit 1
-    fi
-    echo "✅ Added Node.js memory limit configuration"
-else
-    echo "ℹ️ Node.js memory limit configuration already exists"
-fi
-
-# TODO 2: copy static reference to static-inside
-
-# 3. Build ......................................................
-log_step "Building application"
+# 1. Build Dist Frontend App ..................................................
+log_step "1/2 Building application"
 if ! npm run build; then
     echo "❌ Failed to build Svelte application"
     exit 1
 fi
 
+# 2. Build Local Container ....................................................
+log_step "2/2 Building container"
 if ! ./run-compose.sh --build; then
     echo "❌ Failed to build Docker image"
     exit 1
