@@ -10,6 +10,18 @@ log_step() {
     echo "----------------------------------------"
 }
 
+# Detect container engine
+if command -v podman >/dev/null 2>&1; then
+    CONTAINER_ENGINE="podman"
+elif command -v docker >/dev/null 2>&1; then
+    CONTAINER_ENGINE="docker"
+else
+    echo "❌ Neither podman nor docker found. Please install one of them."
+    exit 1
+fi
+
+echo "🐋 Using container engine: ${CONTAINER_ENGINE}"
+
 # Load environment variables
 if [ -f .env ]; then
     source .env
@@ -44,17 +56,17 @@ log_step "Check if running"
 
 # 2. Deploy to ECR ..............................................
 log_step "Deploying to ECR"
-if ! aws ecr get-login-password --region ${AWS_REGION} | podman login --username AWS --password-stdin ${ECR_URL}; then
+if ! aws ecr get-login-password --region ${AWS_REGION} | ${CONTAINER_ENGINE} login --username AWS --password-stdin ${ECR_URL}; then
     echo "❌ Failed to login to ECR"
     exit 1
 fi
 
-if ! podman tag ${BASE_IMAGE} ${ECR_URL}/${REPO_NAME}:v${VERSION}${IMAGE_TAG_SUFFIX}; then
+if ! ${CONTAINER_ENGINE} tag ${BASE_IMAGE} ${ECR_URL}/${REPO_NAME}:v${VERSION}${IMAGE_TAG_SUFFIX}; then
     echo "❌ Failed to tag image"
     exit 1
 fi
 
-if ! podman push ${ECR_URL}/${REPO_NAME}:v${VERSION}${IMAGE_TAG_SUFFIX}; then
+if ! ${CONTAINER_ENGINE} push ${ECR_URL}/${REPO_NAME}:v${VERSION}${IMAGE_TAG_SUFFIX}; then
     echo "❌ Failed to push image"
     exit 1
 fi
