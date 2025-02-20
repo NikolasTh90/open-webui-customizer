@@ -1,7 +1,7 @@
 #!/bin/bash
 
 set -e    # Exit on error
-set -x    # Print commands before executing them (helpful for debugging)
+#set -x    # Print commands before executing them (helpful for debugging)
 
 # Function to log steps
 log_step() {
