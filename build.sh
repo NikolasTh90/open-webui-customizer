@@ -23,7 +23,18 @@ echo "Building version: ${VERSION}"
 log_step "Customization phase"
 # Do your Things!
 
-# TODO 1: DO NOT FORGET TO INCLUDE IN dockerfile this: ENV NODE_OPTIONS=--max-old-space-size=4096
+# Modify Dockerfile to increase Node.js memory limit
+log_step "Updating Dockerfile configuration"
+if ! grep -q "ENV NODE_OPTIONS=--max-old-space-size=4096" Dockerfile; then
+    if ! sed -i '/WORKDIR \/app/i ENV NODE_OPTIONS=--max-old-space-size=4096' Dockerfile; then
+        echo "❌ Failed to update Dockerfile"
+        exit 1
+    fi
+    echo "✅ Added Node.js memory limit configuration"
+else
+    echo "ℹ️ Node.js memory limit configuration already exists"
+fi
+
 # TODO 2: copy static reference to static-inside
 
 # 3. Build ......................................................
