@@ -39,4 +39,85 @@ fi
 # 4. Customize ................................................................
 log_step "4/4 Customization phase"
 
-# TODO 2: copy customization/static/* content folder to open-webui/static/* inside the open-webui folder
+# Define source and destination directories
+SRC_DIR="../customization/static/"
+DEST_DIR="./static/"
+
+# Ensure we're working with absolute paths
+SRC_DIR=$(realpath "$SRC_DIR")
+DEST_DIR=$(realpath "$DEST_DIR")
+
+# Check if source directory exists
+if [ ! -d "$SRC_DIR" ]; then
+    echo "❌ Source directory $SRC_DIR not found"
+    exit 1
+fi
+
+# Create destination directory if it doesn't exist
+mkdir -p "$DEST_DIR"
+
+# Function to check file structure consistency
+check_structure() {
+    local src="$1"
+    local dest="$2"
+    local inconsistencies=0
+
+    # Check for files in source that don't exist in destination structure
+    find "$src" -type f | while read -r srcfile; do
+        # Get relative path
+        relpath="${srcfile#$src}"
+        destfile="$dest/$relpath"
+        destdir=$(dirname "$destfile")
+
+        if [ ! -d "$destdir" ]; then
+            echo "⚠️  Warning: Directory structure mismatch for: $relpath"
+            echo "   Source: $srcfile"
+            echo "   Expected destination directory: $destdir"
+            ((inconsistencies++))
+        fi
+    done
+
+    return $inconsistencies
+}
+
+# Check structure consistency
+echo "🔍 Checking structure consistency..."
+check_structure "$SRC_DIR" "$DEST_DIR"
+structure_status=$?
+
+if [ $structure_status -gt 0 ]; then
+    echo "⚠️  Found $structure_status potential structure inconsistencies"
+    echo "💡 Review the warnings above before proceeding"
+    read -p "Do you want to continue with the copy operation? (y/N) " -n 1 -r
+    echo
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        echo "❌ Operation cancelled by user"
+        exit 1
+    fi
+fi
+
+# Copy files with logging
+echo "📁 Copying customization files..."
+find "$SRC_DIR" -type f | while read -r srcfile; do
+    relpath="${srcfile#$SRC_DIR}"
+    destfile="$DEST_DIR/$relpath"
+    destdir=$(dirname "$destfile")
+
+    # Create destination directory if needed
+    mkdir -p "$destdir"
+
+    # Check if file exists in destination
+    if [ -f "$destfile" ]; then
+        if ! cmp -s "$srcfile" "$destfile"; then
+            echo "🔄 Updating: $relpath"
+            cp "$srcfile" "$destfile"
+        else
+            echo "✅ Unchanged: $relpath"
+        fi
+    else
+        echo "➕ Adding new file: $relpath"
+        cp "$srcfile" "$destfile"
+    fi
+done
+
+echo "✅ Customization files copied successfully"
