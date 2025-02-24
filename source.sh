@@ -36,8 +36,22 @@ else
     echo "ℹ️ Node.js memory limit configuration already exists"
 fi
 
-# Modify run-compose.sh to use podman
-# TODO 5
+ # Modify run-compose.sh to use podman                                                                                                                                                        
+ log_step "Updating run-compose.sh to use podman"                                                                                                                                             
+ if ! grep -q "alias docker=podman" run-compose.sh; then                                                                                                                                      
+     if ! sed -i '1a\                                                                                                                                                                         
+ \                                                                                                                                                                                            
+ alias docker=podman\                                                                                                                                                                         
+ shopt -s expand_aliases\                                                                                                                                                                     
+ ' run-compose.sh; then                                                                                                                                                                       
+         echo "❌ Failed to update run-compose.sh"                                                                                                                                            
+         exit 1                                                                                                                                                                               
+     fi                                                                                                                                                                                       
+     echo "✅ Added podman alias to run-compose.sh"                                                                                                                                           
+ else                                                                                                                                                                                         
+     echo "ℹ️ Podman alias already exists in run-compose.sh"                                                                                                                                  
+ fi                                                                                                                                                                                           
+           
 
 # 4. Customize ................................................................
 log_step "4/4 Customization phase"
