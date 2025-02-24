@@ -1,7 +1,7 @@
 .PHONY: all source build publish clean check-env
 
 # Default target
-all: check-env source build publish
+all: check-env source build publish clean
 
 # Check for .env file
 check-env:
