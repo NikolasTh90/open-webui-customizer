@@ -10,6 +10,8 @@ log_step() {
     echo "----------------------------------------"
 }
 
+export NODE_OPTIONS=--max-old-space-size=4096
+
 # Enter submodule directory
 cd open-webui || exit 1
 
