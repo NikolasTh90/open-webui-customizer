@@ -36,6 +36,9 @@ else
     echo "ℹ️ Node.js memory limit configuration already exists"
 fi
 
+# Modify run-compose.sh to use podman
+# TODO 5
+
 # 4. Customize ................................................................
 log_step "4/4 Customization phase"
 
