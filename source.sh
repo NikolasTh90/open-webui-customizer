@@ -12,7 +12,8 @@ log_step() {
 
 # 1. Clone ....................................................................
 log_step "1/4 Cloning repository"
-git submodule update
+git submodule deinit -f open-webui
+git submodule update --init --recursive --remote
 
 # Enter submodule directory
 cd open-webui || exit 1

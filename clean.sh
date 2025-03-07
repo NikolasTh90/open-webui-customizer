@@ -35,6 +35,6 @@ log_step "2/2 Resetting submodule to original state"
 
 # Reset submodule to its committed state
 git submodule deinit -f open-webui
-git submodule update --init --recursive
+git submodule update --init --recursive --remote
 
 log_step "✅ Cleanup completed successfully"
