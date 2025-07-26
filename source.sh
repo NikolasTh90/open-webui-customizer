@@ -20,7 +20,7 @@ cd open-webui || exit 1
 
 # 2. Install deps  ............................................................
 log_step "2/4 Install deps"
-npm install
+npm install --force
 
 # 3. Overload  ................................................................
 log_step "3/4 Overload phase"
