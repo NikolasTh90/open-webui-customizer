@@ -24,7 +24,7 @@ fi
 
 # 2. Build Local Container ....................................................
 log_step "2/2 Building container"
-if ! ./run-compose.sh --build; then
+if ! ./run-compose.sh --build --quiet; then
     echo "❌ Failed to build Docker image"
     exit 1
 fi
