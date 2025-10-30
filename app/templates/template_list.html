@@ -1,0 +1,58 @@
+{% if templates|length > 0 %}
+<div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+    {% for template in templates %}
+    <div class="bg-white overflow-hidden shadow rounded-lg">
+        <div class="px-4 py-5 sm:px-6">
+            <div class="flex justify-between items-start">
+                <h3 class="text-lg font-medium text-gray-900 truncate">
+                    {{ template.name }}
+                </h3>
+                <button hx-get="/branding/{{ template.id }}/edit" hx-target="#modal-content" hx-swap="innerHTML" onclick="showModal()"
+                    class="text-gray-400 hover:text-gray-500">
+                    <i class="fas fa-edit"></i>
+                </button>
+            </div>
+            <p class="mt-1 text-sm text-gray-500">
+                {{ template.description or "No description" }}
+            </p>
+        </div>
+        <div class="border-t border-gray-200 px-4 py-4 sm:px-6">
+            <div class="flex justify-between items-center">
+                <div class="text-sm text-gray-500">
+                    Brand: {{ template.brand_name }}
+                </div>
+                <div class="flex space-x-2">
+                    <button hx-get="/branding/{{ template.id }}/assets" hx-target="#modal-content" hx-swap="innerHTML" onclick="showModal()"
+                        class="inline-flex items-center px-2.5 py-1.5 border border-gray-300 text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
+                        Assets
+                    </button>
+                    <button onclick="exportTemplate({{ template.id }})"
+                        class="inline-flex items-center px-2.5 py-1.5 border border-gray-300 text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                        Export
+                    </button>
+                    <button hx-delete="/api/v1/branding/templates/{{ template.id }}" hx-target="#templates-list" hx-swap="innerHTML"
+                        class="inline-flex items-center px-2.5 py-1.5 border border-transparent text-xs font-medium rounded text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
+                        Delete
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="text-center py-12">
+    <i class="fas fa-palette text-gray-400 text-4xl mb-4"></i>
+    <h3 class="mt-2 text-sm font-medium text-gray-900">No branding templates</h3>
+    <p class="mt-1 text-sm text-gray-500">
+        Get started by creating a new branding template.
+    </p>
+    <div class="mt-6">
+        <button hx-get="/branding/create" hx-target="#modal-content" hx-swap="innerHTML" onclick="showModal()"
+            class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
+            <i class="fas fa-plus mr-2"></i>
+            New Template
+        </button>
+    </div>
+</div>
+{% endif %}

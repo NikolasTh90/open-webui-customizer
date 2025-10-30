@@ -1,0 +1,48 @@
+{% if registries|length > 0 %}
+<div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+    {% for registry in registries %}
+    <div class="bg-white overflow-hidden shadow rounded-lg">
+        <div class="px-4 py-5 sm:px-6">
+            <div class="flex justify-between items-start">
+                <h3 class="text-lg font-medium text-gray-900 truncate">
+                    {{ registry.name }}
+                </h3>
+                <button hx-get="/registries/{{ registry.id }}/edit" hx-target="#modal-content" hx-swap="innerHTML" onclick="showModal()"
+                    class="text-gray-400 hover:text-gray-500">
+                    <i class="fas fa-edit"></i>
+                </button>
+            </div>
+            <p class="mt-1 text-sm text-gray-500">
+                Type: {{ registry.registry_type }}
+            </p>
+        </div>
+        <div class="border-t border-gray-200 px-4 py-4 sm:px-6">
+            <div class="flex justify-between items-center">
+                <div class="text-sm text-gray-500">
+                    Target: {{ registry.target_image }}
+                </div>
+                <button hx-delete="/api/v1/registries/{{ registry.id }}" hx-target="#registries-list" hx-swap="innerHTML"
+                    class="inline-flex items-center px-2.5 py-1.5 border border-transparent text-xs font-medium rounded text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
+                    Delete
+                </button>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="text-center py-12">
+    <i class="fas fa-docker text-gray-400 text-4xl mb-4"></i>
+    <h3 class="mt-2 text-sm font-medium text-gray-900">No container registries</h3>
+    <p class="mt-1 text-sm text-gray-500">
+        Get started by adding a new container registry.
+    </p>
+    <div class="mt-6">
+        <button hx-get="/registries/create" hx-target="#modal-content" hx-swap="innerHTML" onclick="showModal()"
+            class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
+            <i class="fas fa-plus mr-2"></i>
+            Add Registry
+        </button>
+    </div>
+</div>
+{% endif %}

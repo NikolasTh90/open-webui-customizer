@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+
+{% block title %}Branding - Open WebUI Customizer{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto">
+    <div class="md:flex md:items-center md:justify-between mb-8">
+        <div class="flex-1 min-w-0">
+            <h2 class="text-2xl font-bold leading-7 text-gray-900 sm:text-3xl sm:truncate">
+                Branding Templates
+            </h2>
+        </div>
+        <div class="mt-4 flex md:mt-0 md:ml-4">
+            <button hx-get="/branding/create" hx-target="#modal-content" hx-swap="innerHTML"
+                class="ml-3 inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
+                Create Template
+            </button>
+            <button onclick="importTemplate()"
+                class="ml-3 inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                Import Template
+            </button>
+        </div>
+    </div>
+
+    <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+        <div class="px-4 py-5 sm:px-6 border-b border-gray-200">
+            <h3 class="text-lg leading-6 font-medium text-gray-900">
+                Template List
+            </h3>
+        </div>
+        <div class="px-4 py-5 sm:px-6">
+            <div id="templates-list" hx-get="/api/v1/branding/templates" hx-trigger="load" hx-swap="innerHTML">
+                <!-- Templates will be loaded here dynamically -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal for creating/updating templates -->
+<div id="modal" class="fixed inset-0 z-50 hidden overflow-y-auto">
+    <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div class="fixed inset-0 transition-opacity" aria-hidden="true">
+            <div class="absolute inset-0 bg-gray-500 opacity-75"></div>
+        </div>
+        <div id="modal-content" class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+            <!-- Modal content will be loaded here -->
+        </div>
+    </div>
+</div>
+
+<script>
+    // Function to show modal
+    function showModal() {
+        document.getElementById('modal').classList.remove('hidden');
+    }
+
+    // Function to hide modal
+    function hideModal() {
+        document.getElementById('modal').classList.add('hidden');
+    }
+
+    // Close modal when clicking outside
+    document.addEventListener('click', function (event) {
+        const modal = document.getElementById('modal');
+        if (modal && !modal.classList.contains('hidden') && event.target === modal) {
+            hideModal();
+        }
+    });
+
+    // Close modal with Escape key
+    document.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape') {
+            hideModal();
+        }
+    });
+
+    // Export template function
+    function exportTemplate(templateId) {
+        fetch(`/api/v1/branding/templates/${templateId}/export`)
+            .then(response => response.json())
+            .then(data => {
+                // Create a blob from the JSON data
+                const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                
+                // Create a download link
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `template-${data.template.name.replace(/\s+/g, '-')}.json`;
+                
+                // Trigger the download
+                document.body.appendChild(a);
+                a.click();
+                
+                // Clean up
+                setTimeout(() => {
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                }, 100);
+            })
+            .catch(error => {
+                console.error('Export error:', error);
+                alert('Error exporting template: ' + error.message);
+            });
+    }
+
+    // Import template function
+    function importTemplate() {
+        // Create a file input element
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.json';
+        
+        // Handle file selection
+        input.onchange = event => {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            // Create FormData object
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            // Send import request
+            fetch('/api/v1/branding/templates/import', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                if (response.ok) {
+                    return response.json();
+                } else {
+                    return response.json().then(data => {
+                        throw new Error(data.detail || 'Unknown error');
+                    });
+                }
+            })
+            .then(data => {
+                alert('Template imported successfully!');
+                // Refresh the template list
+                htmx.ajax('GET', '/api/v1/branding/templates', '#templates-list');
+            })
+            .catch(error => {
+                console.error('Import error:', error);
+                alert('Error importing template: ' + error.message);
+            });
+            .catch(error => {
+                console.error('Import error:', error);
+                alert('Error importing template: ' + error.message);
+            });
+        };
+        
+        // Trigger file selection
+        input.click();
+    }
+</script>
+{% endblock %}

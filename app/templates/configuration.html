@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+
+{% block title %}Configuration - Open WebUI Customizer{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto">
+    <div class="md:flex md:items-center md:justify-between mb-8">
+        <div class="flex-1 min-w-0">
+            <h2 class="text-2xl font-bold leading-7 text-gray-900 sm:text-3xl sm:truncate">
+                Configuration
+            </h2>
+        </div>
+    </div>
+
+    <div class="bg-white shadow overflow-hidden sm:rounded-lg mb-8">
+        <div class="px-4 py-5 sm:px-6 border-b border-gray-200">
+            <h3 class="text-lg leading-6 font-medium text-gray-900">
+                General Configuration
+            </h3>
+        </div>
+        <div class="px-4 py-5 sm:px-6">
+            <div id="config-list" hx-get="/api/v1/configuration/" hx-trigger="load" hx-swap="innerHTML">
+                <!-- Configuration items will be loaded here dynamically -->
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+        <div class="px-4 py-5 sm:px-6 border-b border-gray-200">
+            <h3 class="text-lg leading-6 font-medium text-gray-900">
+                Container Registries
+            </h3>
+        </div>
+        <div class="px-4 py-5 sm:px-6">
+            <div class="flex justify-between items-center mb-4">
+                <h4 class="text-md font-medium text-gray-700">
+                    Registry List
+                </h4>
+                <button hx-get="/registries/create" hx-target="#modal-content" hx-swap="innerHTML" onclick="showModal()"
+                    class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
+                    Add Registry
+                </button>
+            </div>
+            <div id="registries-list" hx-get="/api/v1/registries/" hx-trigger="load" hx-swap="innerHTML">
+                <!-- Registries will be loaded here dynamically -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal for creating/updating registries -->
+<div id="modal" class="fixed inset-0 z-50 hidden overflow-y-auto">
+    <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div class="fixed inset-0 transition-opacity" aria-hidden="true">
+            <div class="absolute inset-0 bg-gray-500 opacity-75"></div>
+        </div>
+        <div id="modal-content" class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+            <!-- Modal content will be loaded here -->
+        </div>
+    </div>
+</div>
+
+<script>
+    // Function to show modal
+    function showModal() {
+        document.getElementById('modal').classList.remove('hidden');
+    }
+
+    // Function to hide modal
+    function hideModal() {
+        document.getElementById('modal').classList.add('hidden');
+    }
+
+    // Close modal when clicking outside
+    document.addEventListener('click', function (event) {
+        const modal = document.getElementById('modal');
+        if (modal && !modal.classList.contains('hidden') && event.target === modal) {
+            hideModal();
+        }
+    });
+
+    // Close modal with Escape key
+    document.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape') {
+            hideModal();
+        }
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,110 @@
+/* Custom styles for Open WebUI Customizer */
+
+.drag-drop-area {
+    border: 2px dashed #cbd5e0;
+    border-radius: 0.375rem;
+    padding: 2rem;
+    text-align: center;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.drag-drop-area:hover {
+    border-color: #48bb78;
+    background-color: #f7fafc;
+}
+
+.drag-drop-area.drag-over {
+    border-color: #48bb78;
+    background-color: #f0fff4;
+}
+
+.file-input-container {
+    position: relative;
+    overflow: hidden;
+    display: inline-block;
+}
+
+.file-input-container input[type="file"] {
+    position: absolute;
+    left: 0;
+    top: 0;
+    opacity: 0;
+    cursor: pointer;
+    width: 100%;
+    height: 100%;
+}
+
+.upload-button {
+    background-color: #48bb78;
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 0.375rem;
+    cursor: pointer;
+    display: inline-block;
+}
+
+.upload-button:hover {
+    background-color: #38a169;
+}
+
+.pipeline-step {
+    position: relative;
+    padding-left: 1.75rem;
+    margin-bottom: 0.5rem;
+}
+
+.pipeline-step:before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0.25rem;
+    width: 1rem;
+    height: 1rem;
+    border-radius: 50%;
+    background-color: #e2e8f0;
+    border: 2px solid #cbd5e0;
+}
+
+.pipeline-step.completed:before {
+    background-color: #48bb78;
+    border-color: #48bb78;
+}
+
+.pipeline-step.running:before {
+    background-color: #ecc94b;
+    border-color: #ecc94b;
+}
+
+.pipeline-step.failed:before {
+    background-color: #e53e3e;
+    border-color: #e53e3e;
+}
+
+.status-badge {
+    display: inline-flex;
+    padding: 0.25rem 0.5rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+.status-badge.pending {
+    background-color: #e2e8f0;
+    color: #4a5568;
+}
+
+.status-badge.running {
+    background-color: #fefcbf;
+    color: #975a16;
+}
+
+.status-badge.completed {
+    background-color: #c6f6d5;
+    color: #227a43;
+}
+
+.status-badge.failed {
+    background-color: #fed7d7;
+    color: #c53030;
+}

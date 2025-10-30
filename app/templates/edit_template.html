@@ -1,0 +1,49 @@
+<div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+    <div class="sm:flex sm:items-start">
+        <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
+            <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">
+                Edit Branding Template
+            </h3>
+            <form id="edit-template-form" hx-put="/api/v1/branding/templates/{{ template.id }}" hx-target="#templates-list" hx-swap="innerHTML" hx-on:htmx:after-request="hideModal()">
+                <div class="mb-4">
+                    <label for="template-name" class="block text-sm font-medium text-gray-700 mb-1">
+                        Template Name
+                    </label>
+                    <input type="text" id="template-name" name="name" value="{{ template.name }}" required
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500">
+                </div>
+                <div class="mb-4">
+                    <label for="template-description" class="block text-sm font-medium text-gray-700 mb-1">
+                        Description
+                    </label>
+                    <textarea id="template-description" name="description" rows="3"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500">{{ template.description or "" }}</textarea>
+                </div>
+                <div class="mb-4">
+                    <label for="brand-name" class="block text-sm font-medium text-gray-700 mb-1">
+                        Brand Name
+                    </label>
+                    <input type="text" id="brand-name" name="brand_name" value="{{ template.brand_name }}" required
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500">
+                </div>
+                <div class="mb-4">
+                    <label for="replacement-rules" class="block text-sm font-medium text-gray-700 mb-1">
+                        Replacement Rules (JSON)
+                    </label>
+                    <textarea id="replacement-rules" name="replacement_rules" rows="4"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500">{{ template.replacement_rules | tojson if template.replacement_rules else "{}" }}</textarea>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+    <button type="submit" form="edit-template-form"
+        class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-green-600 text-base font-medium text-white hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 sm:ml-3 sm:w-auto sm:text-sm">
+        Update
+    </button>
+    <button type="button" onclick="hideModal()"
+        class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+        Cancel
+    </button>
+</div>

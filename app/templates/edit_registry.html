@@ -1,0 +1,116 @@
+<div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+    <div class="sm:flex sm:items-start">
+        <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
+            <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">
+                Edit Container Registry
+            </h3>
+            <form id="edit-registry-form" hx-put="/api/v1/registries/{{ registry.id }}" hx-target="#registries-list" hx-swap="innerHTML" hx-on:htmx:after-request="hideModal()">
+                <div class="mb-4">
+                    <label for="registry-name" class="block text-sm font-medium text-gray-700 mb-1">
+                        Registry Name
+                    </label>
+                    <input type="text" id="registry-name" name="name" value="{{ registry.name }}" required
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500">
+                </div>
+                <div class="mb-4">
+                    <label for="registry-type" class="block text-sm font-medium text-gray-700 mb-1">
+                        Registry Type
+                    </label>
+                    <select id="registry-type" name="registry_type" required
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500"
+                        onchange="toggleRegistryFields()">
+                        <option value="aws_ecr" {% if registry.registry_type == 'aws_ecr' %}selected{% endif %}>AWS ECR</option>
+                        <option value="docker_hub" {% if registry.registry_type == 'docker_hub' %}selected{% endif %}>Docker Hub</option>
+                        <option value="quay_io" {% if registry.registry_type == 'quay_io' %}selected{% endif %}>Quay.io</option>
+                    </select>
+                </div>
+                <div class="mb-4">
+                    <label for="base-image" class="block text-sm font-medium text-gray-700 mb-1">
+                        Base Image
+                    </label>
+                    <input type="text" id="base-image" name="base_image" value="{{ registry.base_image }}" required
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500">
+                </div>
+                <div class="mb-4">
+                    <label for="target-image" class="block text-sm font-medium text-gray-700 mb-1">
+                        Target Image
+                    </label>
+                    <input type="text" id="target-image" name="target_image" value="{{ registry.target_image }}" required
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500">
+                </div>
+                
+                <!-- AWS ECR Specific Fields -->
+                <div id="aws-fields" class="{% if registry.registry_type != 'aws_ecr' %}hidden{% endif %}">
+                    <div class="mb-4">
+                        <label for="aws-account-id" class="block text-sm font-medium text-gray-700 mb-1">
+                            AWS Account ID
+                        </label>
+                        <input type="text" id="aws-account-id" name="aws_account_id" value="{{ registry.aws_account_id or '' }}"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500">
+                    </div>
+                    <div class="mb-4">
+                        <label for="aws-region" class="block text-sm font-medium text-gray-700 mb-1">
+                            AWS Region
+                        </label>
+                        <input type="text" id="aws-region" name="aws_region" value="{{ registry.aws_region or '' }}"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500">
+                    </div>
+                    <div class="mb-4">
+                        <label for="repository-name" class="block text-sm font-medium text-gray-700 mb-1">
+                            Repository Name
+                        </label>
+                        <input type="text" id="repository-name" name="repository_name" value="{{ registry.repository_name or '' }}"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500">
+                    </div>
+                </div>
+                
+                <!-- Docker Hub/Quay.io Specific Fields -->
+                <div id="auth-fields" class="{% if registry.registry_type not in ['docker_hub', 'quay_io'] %}hidden{% endif %}">
+                    <div class="mb-4">
+                        <label for="username" class="block text-sm font-medium text-gray-700 mb-1">
+                            Username
+                        </label>
+                        <input type="text" id="username" name="username" value="{{ registry.username or '' }}"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500">
+                    </div>
+                    <div class="mb-4">
+                        <label for="password" class="block text-sm font-medium text-gray-700 mb-1">
+                            Password/Token
+                        </label>
+                        <input type="password" id="password" name="password"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500">
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+    <button type="submit" form="edit-registry-form"
+        class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-green-600 text-base font-medium text-white hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 sm:ml-3 sm:w-auto sm:text-sm">
+        Update Registry
+    </button>
+    <button type="button" onclick="hideModal()"
+        class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+        Cancel
+    </button>
+</div>
+
+<script>
+    function toggleRegistryFields() {
+        const registryType = document.getElementById('registry-type').value;
+        const awsFields = document.getElementById('aws-fields');
+        const authFields = document.getElementById('auth-fields');
+        
+        // Hide all fields first
+        awsFields.classList.add('hidden');
+        authFields.classList.add('hidden');
+        
+        // Show relevant fields based on registry type
+        if (registryType === 'aws_ecr') {
+            awsFields.classList.remove('hidden');
+        } else if (registryType === 'docker_hub' || registryType === 'quay_io') {
+            authFields.classList.remove('hidden');
+        }
+    }
+</script>
