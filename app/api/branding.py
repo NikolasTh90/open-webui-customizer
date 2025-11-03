@@ -8,7 +8,9 @@ from app.services.branding import (
     create_branding_asset, delete_branding_asset, get_branding_asset_by_filename,
     update_branding_asset, get_branding_template_by_name
 )
+from app.services.branding_application_service import BrandingApplicationService
 from typing import List, Optional
+from datetime import datetime
 import os
 import shutil
 import json
@@ -139,22 +141,154 @@ def import_branding_template(
         # Read the uploaded file content
         content = file.file.read()
         import_data = json.loads(content)
-        
+
         # Validate data
         if "template" not in import_data:
             raise HTTPException(status_code=400, detail="Invalid template data format")
-        
+
         # Check if template with same name already exists
         template_data = import_data["template"]
         existing_template = get_branding_template_by_name(db, template_data["name"])
         if existing_template:
             raise HTTPException(status_code=400, detail=f"Template with name '{template_data['name']}' already exists")
-        
+
         # Create the new template
         new_template = create_branding_template(db, BrandingTemplateCreate(**template_data))
-        
+
         return {"message": "Template imported successfully", "template_id": new_template.id}
     except json.JSONDecodeError:
         raise HTTPException(status_code=400, detail="Invalid JSON file")
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Error importing template: {str(e)}")
+
+@router.get("/files")
+def get_all_branding_files(db: Session = Depends(get_db)):
+    """Get all branding files from all templates"""
+    files = []
+    templates = get_branding_templates(db)
+
+    for template in templates:
+        assets = get_branding_assets(db, template.id)
+        for asset in assets:
+            files.append({
+                "id": asset.id,
+                "template_id": template.id,
+                "template_name": template.name,
+                "file_name": asset.file_name,
+                "file_type": asset.file_type,
+                "file_path": asset.file_path,
+                "created_at": asset.created_at,
+                "updated_at": asset.updated_at
+            })
+
+    return files
+
+@router.post("/upload-global")
+async def upload_global_branding_file(
+    files: List[UploadFile] = File(...),
+    file_type: str = Form(...),
+    db: Session = Depends(get_db)
+):
+    """Upload branding files globally (not tied to a specific template)"""
+    uploaded_files = []
+
+    for file in files:
+        # Create a global template if it doesn't exist
+        global_template = get_branding_template_by_name(db, "Global Branding")
+        if not global_template:
+            global_template = create_branding_template(db, BrandingTemplateCreate(
+                name="Global Branding",
+                description="Global branding files not tied to specific templates",
+                brand_name="Global",
+                replacement_rules=[]
+            ))
+
+        # Create directory for this template if it doesn't exist
+        template_dir = UPLOAD_DIR / f"template_{global_template.id}"
+        template_dir.mkdir(exist_ok=True)
+
+        # Save file to disk
+        file_path = template_dir / file.filename
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+
+        # Check if asset already exists
+        db_asset = get_branding_asset_by_filename(db, global_template.id, file.filename)
+        if db_asset:
+            # Update existing asset
+            updated_asset = update_branding_asset(db, db_asset.id, file.filename, file_type, str(file_path))
+            uploaded_files.append(updated_asset)
+        else:
+            # Create new asset
+            new_asset = create_branding_asset(db, BrandingAssetCreate(
+                template_id=global_template.id,
+                file_name=file.filename,
+                file_type=file_type,
+                file_path=str(file_path)
+            ))
+            uploaded_files.append(new_asset)
+
+    return {"message": f"Successfully uploaded {len(uploaded_files)} files", "files": uploaded_files}
+
+@router.get("/files/backup")
+def backup_branding_files(db: Session = Depends(get_db)):
+    """Create a backup of all branding files"""
+    backup_data = {
+        "backup_date": datetime.utcnow().isoformat(),
+        "templates": []
+    }
+
+    templates = get_branding_templates(db)
+    for template in templates:
+        template_data = {
+            "id": template.id,
+            "name": template.name,
+            "description": template.description,
+            "brand_name": template.brand_name,
+            "replacement_rules": template.replacement_rules,
+            "assets": []
+        }
+
+        assets = get_branding_assets(db, template.id)
+        for asset in assets:
+            # Read file content if it exists
+            file_content = None
+            if os.path.exists(asset.file_path):
+                try:
+                    with open(asset.file_path, "rb") as f:
+                        file_content = f.read().decode("utf-8", errors="ignore")
+                except:
+                    file_content = None
+
+            template_data["assets"].append({
+                "file_name": asset.file_name,
+                "file_type": asset.file_type,
+                "file_path": asset.file_path,
+                "content": file_content
+            })
+
+        backup_data["templates"].append(template_data)
+
+    return backup_data
+
+@router.post("/apply/{template_id}")
+async def apply_branding_template(
+    template_id: int,
+    target_directory: str = Form("open-webui"),
+    db: Session = Depends(get_db)
+):
+    """Apply a branding template independently of the build process"""
+    branding_service = BrandingApplicationService(db)
+    result = branding_service.apply_branding_template(template_id, target_directory)
+    return result
+
+@router.post("/validate/{template_id}")
+def validate_branding_application(
+    template_id: int,
+    target_directory: str = "open-webui",
+    db: Session = Depends(get_db)
+):
+    """Validate that branding has been properly applied"""
+    branding_service = BrandingApplicationService(db)
+    result = branding_service.validate_branding_application(template_id, target_directory)
+    return result

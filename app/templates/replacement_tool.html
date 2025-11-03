@@ -1,0 +1,351 @@
+{% extends "base.html" %}
+
+{% block title %}Replacement Tool - Open WebUI Customizer{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <div class="md:flex md:items-center md:justify-between mb-8">
+        <div class="flex-1 min-w-0">
+            <h2 class="text-2xl font-bold leading-7 text-gray-900 sm:text-3xl sm:truncate">
+                Text Replacement Tool
+            </h2>
+            <p class="mt-1 text-sm text-gray-500">
+                Create and manage text replacement rules for your branding templates
+            </p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <!-- Replacement Rules Editor -->
+        <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+            <div class="px-4 py-5 sm:px-6 border-b border-gray-200">
+                <h3 class="text-lg leading-6 font-medium text-gray-900">
+                    Replacement Rules
+                </h3>
+                <p class="mt-1 text-sm text-gray-500">
+                    Define text patterns to replace in your templates
+                </p>
+            </div>
+            <div class="px-4 py-5 sm:px-6">
+                <div class="space-y-4">
+                    <div>
+                        <label for="search-text" class="block text-sm font-medium text-gray-700">
+                            Search Pattern
+                        </label>
+                        <input type="text" id="search-text" placeholder="Text or regex pattern to find"
+                            class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                        <div class="mt-1 flex items-center">
+                            <input type="checkbox" id="use-regex" class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded">
+                            <label for="use-regex" class="ml-2 block text-sm text-gray-900">
+                                Use regular expressions
+                            </label>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label for="replace-text" class="block text-sm font-medium text-gray-700">
+                            Replace With
+                        </label>
+                        <input type="text" id="replace-text" placeholder="Replacement text"
+                            class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                    </div>
+
+                    <div class="flex space-x-2">
+                        <button onclick="addReplacementRule()"
+                            class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                            <i class="fas fa-plus mr-2"></i>
+                            Add Rule
+                        </button>
+                        <button onclick="testReplacement()"
+                            class="inline-flex items-center px-3 py-2 border border-gray-300 text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                            <i class="fas fa-play mr-2"></i>
+                            Test
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Rules List -->
+                <div class="mt-6">
+                    <h4 class="text-sm font-medium text-gray-900 mb-3">Current Rules</h4>
+                    <div id="rules-list" class="space-y-2">
+                        <!-- Rules will be added here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Test Area -->
+        <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+            <div class="px-4 py-5 sm:px-6 border-b border-gray-200">
+                <h3 class="text-lg leading-6 font-medium text-gray-900">
+                    Test Your Replacements
+                </h3>
+                <p class="mt-1 text-sm text-gray-500">
+                    See how your rules transform sample text
+                </p>
+            </div>
+            <div class="px-4 py-5 sm:px-6">
+                <div class="space-y-4">
+                    <div>
+                        <label for="test-input" class="block text-sm font-medium text-gray-700">
+                            Input Text
+                        </label>
+                        <textarea id="test-input" rows="6" placeholder="Enter text to test your replacement rules..."
+                            class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">Open WebUI is a powerful web interface for interacting with large language models. Open WebUI provides an intuitive chat interface and supports multiple model backends.</textarea>
+                    </div>
+
+                    <div>
+                        <label for="test-output" class="block text-sm font-medium text-gray-700">
+                            Output Text
+                        </label>
+                        <textarea id="test-output" rows="6" readonly
+                            class="mt-1 block w-full bg-gray-50 border-gray-300 rounded-md shadow-sm sm:text-sm"></textarea>
+                    </div>
+
+                    <div class="flex justify-between">
+                        <button onclick="clearTest()"
+                            class="inline-flex items-center px-3 py-2 border border-gray-300 text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                            Clear
+                        </button>
+                        <button onclick="exportRules()"
+                            class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-green-600 hover:bg-green-700">
+                            <i class="fas fa-download mr-2"></i>
+                            Export Rules
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Save Template Section -->
+    <div class="mt-8 bg-white shadow overflow-hidden sm:rounded-lg">
+        <div class="px-4 py-5 sm:px-6 border-b border-gray-200">
+            <h3 class="text-lg leading-6 font-medium text-gray-900">
+                Save as Template
+            </h3>
+            <p class="mt-1 text-sm text-gray-500">
+                Save your replacement rules as a branding template
+            </p>
+        </div>
+        <div class="px-4 py-5 sm:px-6">
+            <form id="save-template-form" class="space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="template-name" class="block text-sm font-medium text-gray-700">
+                            Template Name
+                        </label>
+                        <input type="text" id="template-name" required
+                            class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                    </div>
+                    <div>
+                        <label for="brand-name" class="block text-sm font-medium text-gray-700">
+                            Brand Name
+                        </label>
+                        <input type="text" id="brand-name" required
+                            class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                    </div>
+                </div>
+                <div>
+                    <label for="template-description" class="block text-sm font-medium text-gray-700">
+                        Description
+                    </label>
+                    <textarea id="template-description" rows="3"
+                        class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"></textarea>
+                </div>
+                <div class="flex justify-end">
+                    <button type="submit"
+                        class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700">
+                        <i class="fas fa-save mr-2"></i>
+                        Save Template
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    let replacementRules = [];
+
+    // Add a replacement rule
+    function addReplacementRule() {
+        const searchText = document.getElementById('search-text').value.trim();
+        const replaceText = document.getElementById('replace-text').value.trim();
+        const useRegex = document.getElementById('use-regex').checked;
+
+        if (!searchText) {
+            alert('Please enter a search pattern');
+            return;
+        }
+
+        const rule = {
+            search: searchText,
+            replace: replaceText,
+            regex: useRegex,
+            id: Date.now()
+        };
+
+        replacementRules.push(rule);
+        renderRules();
+        clearInputs();
+        testReplacement();
+    }
+
+    // Render the rules list
+    function renderRules() {
+        const rulesList = document.getElementById('rules-list');
+        rulesList.innerHTML = '';
+
+        if (replacementRules.length === 0) {
+            rulesList.innerHTML = '<p class="text-sm text-gray-500 italic">No rules added yet</p>';
+            return;
+        }
+
+        replacementRules.forEach((rule, index) => {
+            const ruleDiv = document.createElement('div');
+            ruleDiv.className = 'flex items-center justify-between p-3 bg-gray-50 rounded-md';
+            ruleDiv.innerHTML = `
+                <div class="flex-1">
+                    <div class="text-sm font-medium text-gray-900">
+                        "${rule.search}" → "${rule.replace}"
+                        ${rule.regex ? '<span class="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">Regex</span>' : ''}
+                    </div>
+                </div>
+                <div class="flex space-x-2">
+                    <button onclick="moveRule(${index}, -1)" class="text-gray-400 hover:text-gray-600" ${index === 0 ? 'disabled' : ''}>
+                        <i class="fas fa-arrow-up"></i>
+                    </button>
+                    <button onclick="moveRule(${index}, 1)" class="text-gray-400 hover:text-gray-600" ${index === replacementRules.length - 1 ? 'disabled' : ''}>
+                        <i class="fas fa-arrow-down"></i>
+                    </button>
+                    <button onclick="removeRule(${index})" class="text-red-400 hover:text-red-600">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            `;
+            rulesList.appendChild(ruleDiv);
+        });
+    }
+
+    // Remove a rule
+    function removeRule(index) {
+        replacementRules.splice(index, 1);
+        renderRules();
+        testReplacement();
+    }
+
+    // Move a rule up or down
+    function moveRule(index, direction) {
+        const newIndex = index + direction;
+        if (newIndex >= 0 && newIndex < replacementRules.length) {
+            [replacementRules[index], replacementRules[newIndex]] = [replacementRules[newIndex], replacementRules[index]];
+            renderRules();
+            testReplacement();
+        }
+    }
+
+    // Test replacement on input text
+    function testReplacement() {
+        const inputText = document.getElementById('test-input').value;
+        const outputText = document.getElementById('test-output');
+
+        let result = inputText;
+        replacementRules.forEach(rule => {
+            try {
+                if (rule.regex) {
+                    const regex = new RegExp(rule.search, 'g');
+                    result = result.replace(regex, rule.replace);
+                } else {
+                    result = result.replace(new RegExp(rule.search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), rule.replace);
+                }
+            } catch (e) {
+                console.error('Invalid regex:', e);
+            }
+        });
+
+        outputText.value = result;
+    }
+
+    // Clear test inputs
+    function clearTest() {
+        document.getElementById('test-input').value = '';
+        document.getElementById('test-output').value = '';
+    }
+
+    // Clear input fields
+    function clearInputs() {
+        document.getElementById('search-text').value = '';
+        document.getElementById('replace-text').value = '';
+        document.getElementById('use-regex').checked = false;
+    }
+
+    // Export rules as JSON
+    function exportRules() {
+        const data = {
+            rules: replacementRules,
+            timestamp: new Date().toISOString()
+        };
+
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'replacement-rules.json';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+
+    // Save as template
+    document.getElementById('save-template-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        const templateName = document.getElementById('template-name').value.trim();
+        const brandName = document.getElementById('brand-name').value.trim();
+        const description = document.getElementById('template-description').value.trim();
+
+        if (!templateName || !brandName) {
+            alert('Please fill in all required fields');
+            return;
+        }
+
+        const templateData = {
+            name: templateName,
+            description: description,
+            brand_name: brandName,
+            replacement_rules: replacementRules.reduce((acc, rule) => {
+                acc[rule.search] = rule.replace;
+                return acc;
+            }, {})
+        };
+
+        // Send to API
+        fetch('/api/v1/branding/templates', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(templateData)
+        })
+        .then(response => {
+            if (response.ok) {
+                alert('Template saved successfully!');
+                // Reset form
+                document.getElementById('save-template-form').reset();
+            } else {
+                return response.json().then(data => {
+                    throw new Error(data.detail || 'Failed to save template');
+                });
+            }
+        })
+        .catch(error => {
+            alert('Error saving template: ' + error.message);
+        });
+    });
+
+    // Auto-test on input change
+    document.getElementById('test-input').addEventListener('input', testReplacement);
+</script>
+{% endblock %}

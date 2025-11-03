@@ -11,13 +11,28 @@
             </h2>
         </div>
         <div class="mt-4 flex md:mt-0 md:ml-4">
-            <button hx-get="/branding/create" hx-target="#modal-content" hx-swap="innerHTML"
+            <button onclick="showFileManager()"
+                class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                <i class="fas fa-folder-open mr-2"></i>
+                File Manager
+            </button>
+            <a href="/replacement-tool"
+                class="ml-3 inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500">
+                <i class="fas fa-magic mr-2"></i>
+                Replacement Tool
+            </a>
+            <button hx-get="/branding/create" hx-target="#modal-content" hx-swap="innerHTML" onclick="showModal()"
                 class="ml-3 inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
                 Create Template
             </button>
             <button onclick="importTemplate()"
                 class="ml-3 inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
                 Import Template
+            </button>
+            <button onclick="showBrandingApplication()"
+                class="ml-3 inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500">
+                <i class="fas fa-magic mr-2"></i>
+                Apply Branding
             </button>
         </div>
     </div>
@@ -48,6 +63,158 @@
     </div>
 </div>
 
+<!-- File Manager Modal -->
+<div id="file-manager-modal" class="fixed inset-0 z-50 hidden overflow-y-auto">
+    <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div class="fixed inset-0 transition-opacity" aria-hidden="true">
+            <div class="absolute inset-0 bg-gray-500 opacity-75"></div>
+        </div>
+        <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl sm:w-full">
+            <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                <div class="sm:flex sm:items-start">
+                    <div class="mt-3 text-center sm:mt-0 sm:text-left w-full">
+                        <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">
+                            <i class="fas fa-folder-open mr-2"></i>
+                            Branding File Manager
+                        </h3>
+
+                        <!-- Upload Section -->
+                        <div class="mb-6 p-4 border border-gray-200 rounded-lg bg-gray-50">
+                            <h4 class="text-md font-medium text-gray-900 mb-3">Upload New Branding Files</h4>
+                            <form id="file-upload-form" action="/api/v1/branding/upload-global" method="post" enctype="multipart/form-data" target="upload-frame">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label for="upload-file" class="block text-sm font-medium text-gray-700 mb-1">
+                                            Select File
+                                        </label>
+                                        <input type="file" id="upload-file" name="file" required multiple
+                                            class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                                    </div>
+                                    <div>
+                                        <label for="upload-file-type" class="block text-sm font-medium text-gray-700 mb-1">
+                                            File Type
+                                        </label>
+                                        <select id="upload-file-type" name="file_type" required
+                                            class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                                            <option value="logo">Logo</option>
+                                            <option value="favicon">Favicon</option>
+                                            <option value="theme">Theme CSS</option>
+                                            <option value="manifest">Web Manifest</option>
+                                            <option value="other">Other</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="mt-4">
+                                    <button type="submit" onclick="handleFileUpload()"
+                                        class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                                        <i class="fas fa-upload mr-2"></i>
+                                        Upload Files
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+
+                        <!-- File List -->
+                        <div>
+                            <h4 class="text-md font-medium text-gray-900 mb-3">Current Branding Files</h4>
+                            <div id="file-list" class="border border-gray-200 rounded-md max-h-96 overflow-y-auto">
+                                <div hx-get="/api/v1/branding/files" hx-trigger="load" hx-swap="innerHTML">
+                                    <!-- Files will be loaded here -->
+                                    <div class="p-4 text-center text-gray-500">
+                                        <i class="fas fa-spinner fa-spin mr-2"></i>
+                                        Loading files...
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                <button type="button" onclick="hideFileManagerModal()"
+                    class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+                    Close
+                </button>
+                <button type="button" onclick="backupFiles()"
+                    class="mt-3 w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-green-600 text-base font-medium text-white hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+                    <i class="fas fa-download mr-2"></i>
+                    Backup Files
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Branding Application Modal -->
+<div id="branding-application-modal" class="fixed inset-0 z-50 hidden overflow-y-auto">
+    <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div class="fixed inset-0 transition-opacity" aria-hidden="true">
+            <div class="absolute inset-0 bg-gray-500 opacity-75"></div>
+        </div>
+        <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full">
+            <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                <div class="sm:flex sm:items-start">
+                    <div class="mt-3 text-center sm:mt-0 sm:text-left w-full">
+                        <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">
+                            <i class="fas fa-magic mr-2"></i>
+                            Apply Branding Independently
+                        </h3>
+
+                        <form id="branding-application-form" action="/api/v1/branding/apply" method="post" target="branding-frame">
+                            <div class="mb-4">
+                                <label for="apply-template-id" class="block text-sm font-medium text-gray-700 mb-1">
+                                    Select Branding Template
+                                </label>
+                                <select id="apply-template-id" name="template_id" required
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500">
+                                    <option value="">Select a template</option>
+                                    {% for template in templates %}
+                                    <option value="{{ template.id }}">{{ template.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="mb-4">
+                                <label for="target-directory" class="block text-sm font-medium text-gray-700 mb-1">
+                                    Target Directory
+                                </label>
+                                <input type="text" id="target-directory" name="target_directory" value="open-webui" required
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500">
+                                <p class="text-sm text-gray-500 mt-1">Directory containing the Open WebUI source code</p>
+                            </div>
+                            <div class="mt-4">
+                                <button type="button" onclick="applyBranding()"
+                                    class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500">
+                                    <i class="fas fa-play mr-2"></i>
+                                    Apply Branding
+                                </button>
+                            </div>
+                        </form>
+
+                        <div id="branding-result" class="mt-6">
+                            <!-- Branding application result will appear here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                <button type="button" onclick="hideBrandingApplicationModal()"
+                    class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+                    Close
+                </button>
+                <button type="button" onclick="validateBranding()"
+                    class="mt-3 w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-green-600 text-base font-medium text-white hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+                    <i class="fas fa-check-circle mr-2"></i>
+                    Validate
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Hidden iframes for form submissions -->
+<iframe name="upload-frame" style="display: none;"></iframe>
+<iframe name="branding-frame" style="display: none;"></iframe>
+
 <script>
     // Function to show modal
     function showModal() {
@@ -71,8 +238,59 @@
     document.addEventListener('keydown', function (event) {
         if (event.key === 'Escape') {
             hideModal();
+            hideFileManagerModal();
+            hideBrandingApplicationModal();
         }
     });
+
+    // File Manager functions
+    function showFileManager() {
+        document.getElementById('file-manager-modal').classList.remove('hidden');
+    }
+
+    function hideFileManagerModal() {
+        document.getElementById('file-manager-modal').classList.add('hidden');
+    }
+
+    // Close file manager modal when clicking outside
+    document.addEventListener('click', function (event) {
+        const fileManagerModal = document.getElementById('file-manager-modal');
+        if (fileManagerModal && !fileManagerModal.classList.contains('hidden') && event.target === fileManagerModal) {
+            hideFileManagerModal();
+        }
+    });
+
+    // Backup files function
+    function backupFiles() {
+        fetch('/api/v1/branding/files/backup')
+            .then(response => response.json())
+            .then(data => {
+                // Create a blob from the backup data
+                const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+
+                // Create a download link
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `branding-backup-${new Date().toISOString().split('T')[0]}.json`;
+
+                // Trigger the download
+                document.body.appendChild(a);
+                a.click();
+
+                // Clean up
+                setTimeout(() => {
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                }, 100);
+
+                alert('Branding files backed up successfully!');
+            })
+            .catch(error => {
+                console.error('Backup error:', error);
+                alert('Error backing up files: ' + error.message);
+            });
+    }
 
     // Export template function
     function exportTemplate(templateId) {
@@ -143,14 +361,157 @@
                 console.error('Import error:', error);
                 alert('Error importing template: ' + error.message);
             });
-            .catch(error => {
-                console.error('Import error:', error);
-                alert('Error importing template: ' + error.message);
-            });
         };
         
         // Trigger file selection
         input.click();
+    }
+
+    // Branding Application functions
+    function showBrandingApplication() {
+        document.getElementById('branding-application-modal').classList.remove('hidden');
+    }
+
+    function hideBrandingApplicationModal() {
+        document.getElementById('branding-application-modal').classList.add('hidden');
+    }
+
+    // Close branding application modal when clicking outside
+    document.addEventListener('click', function (event) {
+        const brandingModal = document.getElementById('branding-application-modal');
+        if (brandingModal && !brandingModal.classList.contains('hidden') && event.target === brandingModal) {
+            hideBrandingApplicationModal();
+        }
+    });
+
+    // Handle file upload
+    function handleFileUpload() {
+        // Show loading state
+        const button = event.target;
+        const originalText = button.innerHTML;
+        button.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Uploading...';
+        button.disabled = true;
+
+        // Submit the form
+        document.getElementById('file-upload-form').submit();
+
+        // Set up iframe load handler to refresh the file list
+        const iframe = document.querySelector('iframe[name="upload-frame"]');
+        iframe.onload = function() {
+            // Reset button state
+            button.innerHTML = originalText;
+            button.disabled = false;
+
+            // Refresh the file list
+            htmx.ajax('GET', '/api/v1/branding/files', '#file-list');
+
+            // Show success message
+            alert('Files uploaded successfully!');
+        };
+    }
+
+    // Apply branding function
+    function applyBranding() {
+        const templateId = document.getElementById('apply-template-id').value;
+        const targetDir = document.getElementById('target-directory').value;
+
+        if (!templateId) {
+            alert('Please select a branding template first');
+            return;
+        }
+
+        // Show loading state
+        const button = event.target;
+        const originalText = button.innerHTML;
+        button.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Applying...';
+        button.disabled = true;
+
+        // Create form data
+        const formData = new FormData();
+        formData.append('template_id', templateId);
+        formData.append('target_directory', targetDir);
+
+        // Submit request
+        fetch('/api/v1/branding/apply/' + templateId, {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            // Reset button state
+            button.innerHTML = originalText;
+            button.disabled = false;
+
+            // Show result
+            let resultHtml = '<div class="mt-4 p-4 border rounded-lg">';
+            if (data.success) {
+                resultHtml += `<h4 class="text-md font-medium text-green-600 mb-2">`;
+                resultHtml += `<i class="fas fa-check-circle mr-2"></i>`;
+                resultHtml += `Branding Applied Successfully</h4>`;
+                resultHtml += `<p class="text-sm text-gray-600">Files modified: ${data.files_modified}, Replacements made: ${data.replacements_made}, Assets copied: ${data.assets_copied}</p>`;
+            } else {
+                resultHtml += `<h4 class="text-md font-medium text-red-600 mb-2">`;
+                resultHtml += `<i class="fas fa-times-circle mr-2"></i>`;
+                resultHtml += `Branding Application Failed</h4>`;
+                if (data.errors && data.errors.length > 0) {
+                    resultHtml += '<ul class="text-sm text-red-600">';
+                    data.errors.forEach(error => {
+                        resultHtml += `<li>• ${error}</li>`;
+                    });
+                    resultHtml += '</ul>';
+                }
+            }
+            resultHtml += '</div>';
+            document.getElementById('branding-result').innerHTML = resultHtml;
+        })
+        .catch(error => {
+            // Reset button state
+            button.innerHTML = originalText;
+            button.disabled = false;
+
+            console.error('Branding application error:', error);
+            document.getElementById('branding-result').innerHTML =
+                '<div class="mt-4 p-4 border border-red-200 rounded-lg bg-red-50 text-red-700">Error applying branding</div>';
+        });
+    }
+
+    // Validate branding function
+    function validateBranding() {
+        const templateId = document.getElementById('apply-template-id').value;
+        const targetDir = document.getElementById('target-directory').value;
+
+        if (!templateId) {
+            alert('Please select a branding template first');
+            return;
+        }
+
+        fetch(`/api/v1/branding/validate/${templateId}?target_directory=${encodeURIComponent(targetDir)}`)
+            .then(response => response.json())
+            .then(data => {
+                let resultHtml = '<div class="mt-4 p-4 border rounded-lg">';
+                resultHtml += `<h4 class="text-md font-medium ${data.valid ? 'text-green-600' : 'text-red-600'} mb-2">`;
+                resultHtml += `<i class="fas fa-${data.valid ? 'check-circle' : 'times-circle'} mr-2"></i>`;
+                resultHtml += `Validation ${data.valid ? 'Passed' : 'Failed'}</h4>`;
+
+                if (data.checks && data.checks.length > 0) {
+                    resultHtml += '<ul class="space-y-1">';
+                    data.checks.forEach(check => {
+                        const icon = check.passed ? 'check-circle text-green-500' : 'times-circle text-red-500';
+                        resultHtml += `<li class="flex items-center text-sm">`;
+                        resultHtml += `<i class="fas fa-${icon} mr-2"></i>`;
+                        resultHtml += `${check.message}</li>`;
+                    });
+                    resultHtml += '</ul>';
+                }
+
+                resultHtml += '</div>';
+                document.getElementById('branding-result').innerHTML = resultHtml;
+            })
+            .catch(error => {
+                console.error('Validation error:', error);
+                document.getElementById('branding-result').innerHTML =
+                    '<div class="mt-4 p-4 border border-red-200 rounded-lg bg-red-50 text-red-700">Error validating branding application</div>';
+            });
     }
 </script>
 {% endblock %}

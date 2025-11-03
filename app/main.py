@@ -1,14 +1,28 @@
+"""
+Main FastAPI application for the Open WebUI Customizer.
+
+This module initializes and configures the FastAPI application with all
+necessary components including routing, middleware, static files, and
+database connections.
+"""
+
+import os
+import sys
+from pathlib import Path
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI, Depends, HTTPException, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse
 from sqlalchemy.orm import Session
-import os
-import sys
 
-# Add the parent directory to the path
-sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
+# Add the parent directory to the path for proper imports
+parent_dir = Path(__file__).parent.parent
+sys.path.insert(0, str(parent_dir))
 
+from app.config import get_settings
+from app.utils.logging import setup_logging
 from app.models.database import engine, Base, SessionLocal
 from app.api.branding import router as branding_router
 from app.api.configuration import router as config_router
@@ -18,8 +32,8 @@ from app.services.branding import get_branding_templates
 from app.services.registry import get_all_registries
 from app.services.pipeline import get_all_pipeline_runs, get_pipeline_run
 
-# Create the database tables
-Base.metadata.create_all(bind=engine)
+# Database tables are managed by Alembic migrations
+# Do not create tables automatically
 
 app = FastAPI(title="Open WebUI Customizer")
 
@@ -61,7 +75,8 @@ async def dashboard(request: Request, db: Session = Depends(get_db)):
 
 @app.get("/branding", response_class=HTMLResponse)
 async def branding_page(request: Request, db: Session = Depends(get_db)):
-    return templates.TemplateResponse("branding.html", {"request": request})
+    templates_list = get_branding_templates(db)
+    return templates.TemplateResponse("branding.html", {"request": request, "templates": templates_list})
 
 @app.get("/branding/create", response_class=HTMLResponse)
 async def create_branding_template(request: Request):
@@ -87,6 +102,22 @@ async def manage_branding_assets(request: Request, template_id: int, db: Session
 @app.get("/configuration", response_class=HTMLResponse)
 async def configuration_page(request: Request, db: Session = Depends(get_db)):
     return templates.TemplateResponse("configuration.html", {"request": request})
+
+@app.get("/replacement-tool", response_class=HTMLResponse)
+async def replacement_tool_page(request: Request):
+    return templates.TemplateResponse("replacement_tool.html", {"request": request})
+
+@app.get("/configuration/create", response_class=HTMLResponse)
+async def create_configuration(request: Request):
+    return templates.TemplateResponse("create_config.html", {"request": request})
+
+@app.get("/configuration/{config_id}/edit", response_class=HTMLResponse)
+async def edit_configuration(request: Request, config_id: int, db: Session = Depends(get_db)):
+    from services.configuration import get_configuration
+    config = get_configuration(db, config_id)
+    if not config:
+        raise HTTPException(status_code=404, detail="Configuration not found")
+    return templates.TemplateResponse("edit_config.html", {"request": request, "config": config})
 
 @app.get("/pipeline", response_class=HTMLResponse)
 async def pipeline_page(request: Request, db: Session = Depends(get_db)):
@@ -138,6 +169,12 @@ async def api_configurations(request: Request, db: Session = Depends(get_db)):
 async def api_pipeline_runs(request: Request, db: Session = Depends(get_db)):
     runs_list = get_all_pipeline_runs(db)
     return templates.TemplateResponse("pipeline_runs.html", {"request": request, "runs": runs_list})
+
+@app.get("/api/v1/branding/files", response_class=HTMLResponse)
+async def api_branding_files(request: Request, db: Session = Depends(get_db)):
+    from app.api.branding import get_all_branding_files
+    files_list = get_all_branding_files(db)
+    return templates.TemplateResponse("file_list.html", {"request": request, "files": files_list})
 
 if __name__ == "__main__":
     import uvicorn

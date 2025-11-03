@@ -1,10 +1,13 @@
 import json
 import os
 import subprocess
+import re
+from pathlib import Path
 from sqlalchemy.orm import Session
 from app.models import models
 from app.schemas import branding
 from app.services.registry_service import RegistryService
+from app.services.branding import get_branding_template
 
 class PipelineService:
     def __init__(self, db: Session):
@@ -14,6 +17,7 @@ class PipelineService:
         """Get all available pipeline steps"""
         return [
             {"name": "clone", "description": "Clone/fetch the latest Open WebUI code"},
+            {"name": "branding", "description": "Apply branding customizations (text replacements)"},
             {"name": "build", "description": "Build the Svelte frontend and Docker image"},
             {"name": "publish", "description": "Publish the customized Docker image to a registry"},
             {"name": "clean", "description": "Clean up the environment and reset submodules"}
@@ -39,6 +43,8 @@ class PipelineService:
             for step in steps:
                 if step == "clone":
                     log_output += self._execute_clone_step()
+                elif step == "branding":
+                    log_output += self._execute_branding_step(template_id)
                 elif step == "build":
                     log_output += self._execute_build_step()
                 elif step == "publish":
@@ -98,7 +104,93 @@ class PipelineService:
                 log_output += f"STDERR: {result.stderr}\n"
         
         return log_output
-    
+
+    def _execute_branding_step(self, template_id: int):
+        """Execute the branding step - apply text replacements to Open WebUI source"""
+        log_output = "\n=== Branding Step ===\n"
+
+        # Get the branding template
+        template = get_branding_template(self.db, template_id)
+        if not template:
+            log_output += "Warning: Branding template not found\n"
+            return log_output
+
+        log_output += f"Applying branding template: {template.name}\n"
+
+        # Check if open-webui directory exists
+        openwebui_dir = Path("open-webui")
+        if not openwebui_dir.exists():
+            log_output += "Error: Open WebUI source directory not found. Run clone step first.\n"
+            return log_output
+
+        # Apply replacement rules
+        replacement_rules = template.replacement_rules or []
+        if not replacement_rules:
+            log_output += "No replacement rules found in template\n"
+            return log_output
+
+        log_output += f"Applying {len(replacement_rules)} replacement rules...\n"
+
+        files_modified = 0
+        replacements_made = 0
+
+        # File extensions to process for text replacements
+        text_extensions = {'.js', '.ts', '.jsx', '.tsx', '.html', '.css', '.scss', '.json', '.md', '.txt', '.py'}
+
+        # Walk through all files in open-webui directory
+        for file_path in openwebui_dir.rglob('*'):
+            if file_path.is_file() and file_path.suffix.lower() in text_extensions:
+                try:
+                    # Read file content
+                    with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+                        content = f.read()
+
+                    original_content = content
+                    file_modified = False
+
+                    # Apply each replacement rule
+                    for rule in replacement_rules:
+                        pattern = rule.get('pattern', '')
+                        replacement = rule.get('replacement', '')
+                        use_regex = rule.get('use_regex', False)
+
+                        if not pattern:
+                            continue
+
+                        if use_regex:
+                            try:
+                                # Use regex replacement
+                                new_content = re.sub(pattern, replacement, content, flags=re.MULTILINE | re.DOTALL)
+                                if new_content != content:
+                                    replacements_made += len(re.findall(pattern, content, re.MULTILINE | re.DOTALL))
+                                    content = new_content
+                                    file_modified = True
+                            except re.error as e:
+                                log_output += f"Warning: Invalid regex pattern '{pattern}': {e}\n"
+                        else:
+                            # Use simple string replacement
+                            if pattern in content:
+                                count = content.count(pattern)
+                                replacements_made += count
+                                content = content.replace(pattern, replacement)
+                                file_modified = True
+
+                    # Write back if modified
+                    if file_modified:
+                        with open(file_path, 'w', encoding='utf-8') as f:
+                            f.write(content)
+                        files_modified += 1
+                        rel_path = file_path.relative_to(openwebui_dir)
+                        log_output += f"Modified: {rel_path}\n"
+
+                except Exception as e:
+                    rel_path = file_path.relative_to(openwebui_dir)
+                    log_output += f"Error processing {rel_path}: {str(e)}\n"
+
+        log_output += f"Branding step completed: {files_modified} files modified, {replacements_made} replacements made\n"
+
+        return log_output
+
     def _execute_build_step(self):
         """Execute the build step"""
         log_output = "\n=== Build Step ===\n"

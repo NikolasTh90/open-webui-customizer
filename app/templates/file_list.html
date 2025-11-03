@@ -1,0 +1,139 @@
+{% if files %}
+<div class="divide-y divide-gray-200">
+    {% for file in files %}
+    <div class="flex items-center justify-between p-4 hover:bg-gray-50">
+        <div class="flex items-center space-x-3">
+            {% if file.file_type == 'logo' or file.file_type == 'favicon' %}
+            <img src="/customization{{ file.file_path }}" alt="{{ file.file_name }}"
+                 class="w-10 h-10 object-cover rounded" onerror="this.style.display='none'">
+            {% elif file.file_type == 'theme' %}
+            <i class="fas fa-palette text-blue-500 text-xl"></i>
+            {% elif file.file_type == 'manifest' %}
+            <i class="fas fa-mobile-alt text-green-500 text-xl"></i>
+            {% else %}
+            <i class="fas fa-file text-gray-500 text-xl"></i>
+            {% endif %}
+            <div>
+                <div class="text-sm font-medium text-gray-900">{{ file.file_name }}</div>
+                <div class="text-sm text-gray-500">{{ file.file_type }} • {{ file.template_name }}</div>
+            </div>
+        </div>
+        <div class="flex items-center space-x-2">
+            {% if file.file_type in ['logo', 'favicon', 'theme'] %}
+            <button onclick="previewFile('{{ file.file_path }}', '{{ file.file_type }}', '{{ file.file_name }}')"
+                class="inline-flex items-center p-2 border border-transparent rounded-md text-blue-600 hover:text-blue-800"
+                title="Preview">
+                <i class="fas fa-eye"></i>
+            </button>
+            {% endif %}
+            <button onclick="downloadFile('/customization{{ file.file_path }}', '{{ file.file_name }}')"
+                class="inline-flex items-center p-2 border border-transparent rounded-md text-green-600 hover:text-green-800"
+                title="Download">
+                <i class="fas fa-download"></i>
+            </button>
+            <button hx-delete="/api/v1/branding/assets/{{ file.id }}" hx-target="#file-list" hx-swap="innerHTML"
+                class="inline-flex items-center p-2 border border-transparent rounded-md text-red-600 hover:text-red-800"
+                title="Delete">
+                <i class="fas fa-trash"></i>
+            </button>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="p-8 text-center">
+    <i class="fas fa-folder-open text-gray-400 text-4xl mb-4"></i>
+    <h3 class="text-sm font-medium text-gray-900 mb-1">No branding files</h3>
+    <p class="text-sm text-gray-500">Upload some branding files to get started.</p>
+</div>
+{% endif %}
+
+<!-- File Preview Modal -->
+<div id="file-preview-modal" class="fixed inset-0 z-50 hidden overflow-y-auto">
+    <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div class="fixed inset-0 transition-opacity" aria-hidden="true">
+            <div class="absolute inset-0 bg-gray-500 opacity-75"></div>
+        </div>
+        <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full">
+            <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                <div class="sm:flex sm:items-start">
+                    <div class="mt-3 text-center sm:mt-0 sm:text-left w-full">
+                        <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4" id="file-preview-title">
+                            File Preview
+                        </h3>
+                        <div id="file-preview-content">
+                            <!-- Preview content will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                <button type="button" onclick="hideFilePreviewModal()"
+                    class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Preview file function
+    function previewFile(filePath, fileType, fileName) {
+        const modal = document.getElementById('file-preview-modal');
+        const title = document.getElementById('file-preview-title');
+        const content = document.getElementById('file-preview-content');
+
+        title.textContent = `Preview: ${fileName}`;
+
+        if (fileType === 'logo' || fileType === 'favicon') {
+            content.innerHTML = `<img src="/customization${filePath}" alt="${fileName}" class="max-w-full max-h-96 mx-auto rounded shadow-lg">`;
+        } else if (fileType === 'theme') {
+            content.innerHTML = `
+                <div class="border rounded p-4 bg-gray-50">
+                    <p class="text-sm text-gray-600 mb-2">CSS Theme Preview:</p>
+                    <link rel="stylesheet" href="/customization${filePath}">
+                    <div class="sample-content p-4 border rounded bg-white shadow">
+                        <h4 class="text-lg font-bold">Sample Heading</h4>
+                        <p class="text-sm mb-2">This is how the theme might affect text styling.</p>
+                        <button class="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600">Sample Button</button>
+                    </div>
+                </div>
+            `;
+        } else {
+            content.innerHTML = `<p class="text-gray-500 text-center py-8">Preview not available for this file type.</p>`;
+        }
+
+        modal.classList.remove('hidden');
+    }
+
+    // Hide file preview modal
+    function hideFilePreviewModal() {
+        document.getElementById('file-preview-modal').classList.add('hidden');
+    }
+
+    // Download file function
+    function downloadFile(url, filename) {
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+    // Close file preview modal when clicking outside
+    document.addEventListener('click', function (event) {
+        const modal = document.getElementById('file-preview-modal');
+        if (modal && !modal.classList.contains('hidden') && event.target === modal) {
+            hideFilePreviewModal();
+        }
+    });
+
+    // Close file preview modal with Escape key
+    document.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape') {
+            hideFilePreviewModal();
+        }
+    });
+</script>

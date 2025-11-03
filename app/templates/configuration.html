@@ -14,9 +14,16 @@
 
     <div class="bg-white shadow overflow-hidden sm:rounded-lg mb-8">
         <div class="px-4 py-5 sm:px-6 border-b border-gray-200">
-            <h3 class="text-lg leading-6 font-medium text-gray-900">
-                General Configuration
-            </h3>
+            <div class="flex justify-between items-center">
+                <h3 class="text-lg leading-6 font-medium text-gray-900">
+                    General Configuration
+                </h3>
+                <button hx-get="/configuration/create" hx-target="#modal-content" hx-swap="innerHTML" onclick="showModal()"
+                    class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
+                    <i class="fas fa-plus mr-2"></i>
+                    Add Configuration
+                </button>
+            </div>
         </div>
         <div class="px-4 py-5 sm:px-6">
             <div id="config-list" hx-get="/api/v1/configuration/" hx-trigger="load" hx-swap="innerHTML">
@@ -85,5 +92,29 @@
             hideModal();
         }
     });
+
+    // Function to toggle inline editing
+    function toggleEdit(configId) {
+        const displayDiv = document.getElementById(`config-${configId}`);
+        const editForm = document.getElementById(`edit-form-${configId}`);
+        const editBtn = document.getElementById(`edit-btn-${configId}`);
+
+        // Hide display, show form
+        displayDiv.querySelector('.flex.justify-between').style.display = 'none';
+        editForm.classList.remove('hidden');
+        editBtn.style.display = 'none';
+    }
+
+    // Function to cancel inline editing
+    function cancelEdit(configId) {
+        const displayDiv = document.getElementById(`config-${configId}`);
+        const editForm = document.getElementById(`edit-form-${configId}`);
+        const editBtn = document.getElementById(`edit-btn-${configId}`);
+
+        // Show display, hide form
+        displayDiv.querySelector('.flex.justify-between').style.display = 'flex';
+        editForm.classList.add('hidden');
+        editBtn.style.display = 'inline-block';
+    }
 </script>
 {% endblock %}

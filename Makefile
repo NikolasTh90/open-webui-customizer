@@ -62,6 +62,12 @@ migrate:
 	@alembic upgrade head
 	@echo "Database migrations complete."
 
+# Create a new migration
+migration:
+	@echo "Creating new migration..."
+	@alembic revision --autogenerate -m "$(msg)"
+	@echo "Migration created."
+
 # Run the application
 run:
 	@echo "Starting the application..."

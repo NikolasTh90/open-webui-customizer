@@ -20,10 +20,11 @@
                         </a>
                     </div>
                     <div class="hidden md:flex items-center space-x-1">
-                        <a href="/" class="py-4 px-2 text-green-500 border-b-2 border-green-500 font-semibold">Dashboard</a>
-                        <a href="/branding" class="py-4 px-2 text-gray-500 font-semibold hover:text-green-500 transition duration-300">Branding</a>
-                        <a href="/configuration" class="py-4 px-2 text-gray-500 font-semibold hover:text-green-500 transition duration-300">Configuration</a>
-                        <a href="/pipeline" class="py-4 px-2 text-gray-500 font-semibold hover:text-green-500 transition duration-300">Pipeline</a>
+                        <a href="/" class="py-4 px-2 {% if request.url.path == '/' %}text-green-500 border-b-2 border-green-500{% else %}text-gray-500 hover:text-green-500{% endif %} font-semibold transition duration-300">Dashboard</a>
+                        <a href="/branding" class="py-4 px-2 {% if request.url.path.startswith('/branding') %}text-green-500 border-b-2 border-green-500{% else %}text-gray-500 hover:text-green-500{% endif %} font-semibold transition duration-300">Branding</a>
+                        <a href="/configuration" class="py-4 px-2 {% if request.url.path.startswith('/configuration') %}text-green-500 border-b-2 border-green-500{% else %}text-gray-500 hover:text-green-500{% endif %} font-semibold transition duration-300">Configuration</a>
+                        <a href="/replacement-tool" class="py-4 px-2 {% if request.url.path == '/replacement-tool' %}text-green-500 border-b-2 border-green-500{% else %}text-gray-500 hover:text-green-500{% endif %} font-semibold transition duration-300">Replacement Tool</a>
+                        <a href="/pipeline" class="py-4 px-2 {% if request.url.path.startswith('/pipeline') %}text-green-500 border-b-2 border-green-500{% else %}text-gray-500 hover:text-green-500{% endif %} font-semibold transition duration-300">Pipeline</a>
                     </div>
                 </div>
             </div>

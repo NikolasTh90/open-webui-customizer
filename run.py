@@ -7,6 +7,7 @@ This script initializes the database and starts the FastAPI application.
 import uvicorn
 import argparse
 import os
+import subprocess
 
 from app.main import app
 from app.models.database import engine
@@ -16,9 +17,21 @@ def main():
     parser.add_argument("--host", type=str, default="127.0.0.1", help="Host to run the application on")
     parser.add_argument("--port", type=int, default=8000, help="Port to run the application on")
     parser.add_argument("--reload", action="store_true", help="Enable auto-reload for development")
-    
+    parser.add_argument("--skip-migrations", action="store_true", help="Skip running database migrations")
+
     args = parser.parse_args()
-    
+
+    # Run database migrations unless skipped
+    if not args.skip_migrations:
+        print("Running database migrations...")
+        try:
+            subprocess.run(["alembic", "upgrade", "head"], check=True, capture_output=True)
+            print("Database migrations completed successfully.")
+        except subprocess.CalledProcessError as e:
+            print(f"Failed to run migrations: {e}")
+            print("Use --skip-migrations to start without migrations")
+            return
+
     # Start the application
     uvicorn.run(
         "app.main:app",
