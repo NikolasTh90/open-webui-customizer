@@ -1,0 +1,94 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Branding Templates - Open WebUI Customizer{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1 class="h3 mb-0">Branding Templates</h1>
+            <a href="{% url 'branding:create' %}" class="btn btn-primary">
+                <i class="fas fa-plus me-2"></i>Create Template
+            </a>
+        </div>
+
+        <!-- Templates Grid -->
+        <div class="row" id="templates-grid">
+            {% for template in branding_templates %}
+            <div class="col-md-6 col-lg-4 mb-4">
+                <div class="card h-100 {% if template.is_default %}border-primary{% endif %}">
+                    {% if template.is_default %}
+                    <div class="card-header bg-primary text-white">
+                        <strong>Default Template</strong>
+                    </div>
+                    {% endif %}
+
+                    <div class="card-body">
+                        <h5 class="card-title">{{ template.name }}</h5>
+                        {% if template.description %}
+                        <p class="card-text text-muted">{{ template.description|truncatechars:100 }}</p>
+                        {% endif %}
+
+                        <div class="mb-3">
+                            <small class="text-muted">
+                                <i class="fas fa-palette me-1"></i>
+                                {{ template.brandingasset_set.count }} assets
+                            </small>
+                        </div>
+
+                        {% if template.primary_color %}
+                        <div class="d-flex align-items-center mb-2">
+                            <div class="color-preview me-2"
+                                 style="width: 20px; height: 20px; background-color: {{ template.primary_color }}; border: 1px solid #dee2e6; border-radius: 3px;"></div>
+                            <small class="text-muted">Primary: {{ template.primary_color }}</small>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="card-footer bg-transparent">
+                        <div class="btn-group w-100" role="group">
+                            <a href="{% url 'branding:detail' template.pk %}" class="btn btn-outline-primary btn-sm">
+                                <i class="fas fa-eye me-1"></i>View
+                            </a>
+                            <a href="{% url 'branding:update' template.pk %}" class="btn btn-outline-secondary btn-sm">
+                                <i class="fas fa-edit me-1"></i>Edit
+                            </a>
+                            {% if not template.is_default %}
+                            <button class="btn btn-outline-success btn-sm"
+                                    hx-post="{% url 'branding:set_default' template.pk %}"
+                                    hx-confirm="Make this the default branding template?"
+                                    hx-target="#templates-grid"
+                                    hx-swap="innerHTML">
+                                <i class="fas fa-star me-1"></i>Set Default
+                            </button>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="col-12">
+                <div class="text-center py-5">
+                    <i class="fas fa-palette fa-3x text-muted mb-3"></i>
+                    <h4 class="text-muted">No Branding Templates</h4>
+                    <p class="text-muted">Create your first branding template to customize the Open WebUI interface.</p>
+                    <a href="{% url 'branding:create' %}" class="btn btn-primary">
+                        <i class="fas fa-plus me-2"></i>Create Your First Template
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// HTMX configuration for this page
+document.addEventListener('DOMContentLoaded', function() {
+    // Add any page-specific JavaScript here
+});
+</script>
+{% endblock %}

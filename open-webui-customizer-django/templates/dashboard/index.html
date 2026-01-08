@@ -1,0 +1,243 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Dashboard - Open WebUI Customizer{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Welcome Section -->
+    <div class="col-12 mb-4">
+        <div class="dashboard-card">
+            <h1 class="card-title">Welcome to Open WebUI Customizer</h1>
+            <p class="card-subtitle">Manage your WebUI customizations, credentials, and deployments</p>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Statistics Cards -->
+    <div class="col-xl-3 col-lg-6 col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <h5 class="card-title mb-1">{{ stats.credentials.total }}</h5>
+                        <p class="card-text text-muted mb-0">Active Credentials</p>
+                    </div>
+                    <div class="text-end">
+                        <i class="fas fa-key fa-2x text-primary"></i>
+                    </div>
+                </div>
+                {% if stats.credentials.expiring_soon > 0 %}
+                <div class="mt-2">
+                    <small class="text-warning">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        {{ stats.credentials.expiring_soon }} expiring soon
+                    </small>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-lg-6 col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <h5 class="card-title mb-1">{{ stats.repositories.total }}</h5>
+                        <p class="card-text text-muted mb-0">Git Repositories</p>
+                    </div>
+                    <div class="text-end">
+                        <i class="fas fa-code-branch fa-2x text-success"></i>
+                    </div>
+                </div>
+                <div class="mt-2">
+                    <small class="text-success">{{ stats.repositories.verified }} verified</small>
+                    {% if stats.repositories.unverified > 0 %}
+                    <small class="text-warning ms-2">{{ stats.repositories.unverified }} unverified</small>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-lg-6 col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <h5 class="card-title mb-1">{{ stats.registries.total }}</h5>
+                        <p class="card-text text-muted mb-0">Container Registries</p>
+                    </div>
+                    <div class="text-end">
+                        <i class="fas fa-server fa-2x text-info"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-lg-6 col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <h5 class="card-title mb-1">{{ stats.pipelines.total }}</h5>
+                        <p class="card-text text-muted mb-0">Pipeline Runs</p>
+                    </div>
+                    <div class="text-end">
+                        <i class="fas fa-cogs fa-2x text-warning"></i>
+                    </div>
+                </div>
+                <div class="mt-2">
+                    {% if stats.pipelines.running > 0 %}
+                    <small class="text-primary">{{ stats.pipelines.running }} running</small>
+                    {% endif %}
+                    <small class="text-success ms-2">{{ stats.pipelines.completed }} completed</small>
+                    {% if stats.pipelines.failed > 0 %}
+                    <small class="text-danger ms-2">{{ stats.pipelines.failed }} failed</small>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Quick Actions -->
+    <div class="col-lg-8 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-bolt me-2"></i>Quick Actions
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% for action in quick_actions %}
+                    <div class="col-md-6 mb-3">
+                        <a href="{{ action.url }}" class="text-decoration-none">
+                            <div class="card border-{{ action.color }} h-100">
+                                <div class="card-body text-center">
+                                    <i class="fas {{ action.icon }} fa-2x text-{{ action.color }} mb-2"></i>
+                                    <h6 class="card-title">{{ action.title }}</h6>
+                                    <p class="card-text text-muted small">{{ action.description }}</p>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="col-lg-4 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-history me-2"></i>Recent Activity
+                </h5>
+            </div>
+            <div class="card-body p-0">
+                {% if recent_activity %}
+                <div class="list-group list-group-flush">
+                    {% for activity in recent_activity %}
+                    <a href="{{ activity.url }}" class="list-group-item list-group-item-action px-3 py-3">
+                        <div class="d-flex align-items-center">
+                            <div class="flex-shrink-0 me-3">
+                                <i class="fas {{ activity.icon }} text-{{ activity.status }}"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <div class="fw-semibold">{{ activity.title }}</div>
+                                <small class="text-muted">{{ activity.description }}</small>
+                            </div>
+                            <div class="flex-shrink-0 text-end">
+                                <small class="text-muted">{{ activity.timestamp|timesince }}</small>
+                            </div>
+                        </div>
+                    </a>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                    <p class="text-muted">No recent activity</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- System Status -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-chart-line me-2"></i>System Overview
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-md-3">
+                        <div class="mb-2">
+                            <i class="fas fa-palette fa-2x text-secondary"></i>
+                        </div>
+                        <h4>{{ stats.branding.templates }}</h4>
+                        <p class="text-muted mb-0">Branding Templates</p>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="mb-2">
+                            <i class="fas fa-clock fa-2x text-info"></i>
+                        </div>
+                        <h4>{{ stats.pipelines.recent_30_days }}</h4>
+                        <p class="text-muted mb-0">Pipelines (30 days)</p>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="mb-2">
+                            <i class="fas fa-shield-alt fa-2x text-success"></i>
+                        </div>
+                        <h4>{{ stats.credentials.total }}</h4>
+                        <p class="text-muted mb-0">Secure Credentials</p>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="mb-2">
+                            <i class="fas fa-rocket fa-2x text-primary"></i>
+                        </div>
+                        <h4>{{ stats.repositories.total }}</h4>
+                        <p class="text-muted mb-0">Connected Repositories</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// Auto-refresh dashboard data every 30 seconds
+function refreshDashboard() {
+    // Refresh statistics
+    htmx.ajax('GET', '{% url "dashboard" %}', {
+        target: '.card-body',
+        swap: 'innerHTML'
+    });
+}
+
+// Set up auto-refresh
+setInterval(refreshDashboard, 30000);
+
+// Show welcome toast on first visit
+if (!localStorage.getItem('dashboard-visited')) {
+    setTimeout(() => {
+        showToast('Welcome to Open WebUI Customizer!', 'success');
+        localStorage.setItem('dashboard-visited', 'true');
+    }, 1000);
+}
+</script>
+{% endblock %}

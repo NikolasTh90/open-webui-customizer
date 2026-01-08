@@ -1,0 +1,40 @@
+-r base.txt
+
+# Production web server
+gunicorn>=21.2.0
+
+# Database connection pooling
+django-db-geventpool>=4.1.0
+
+# Caching
+django-redis>=5.4.0
+
+# Static files serving
+whitenoise>=6.6.0
+
+# Monitoring and metrics
+sentry-sdk>=1.40.0
+django-prometheus>=2.3.1
+
+# Email backend for production
+django-anymail>=10.2
+
+# Performance optimization
+django-cache-url>=3.4.5
+
+# Security
+django-environ>=0.11.2
+
+# S3 storage
+django-storages>=1.14.2
+boto3>=1.34.0
+
+# High availability
+gevent>=23.9.1
+
+# Production database drivers
+psycopg2-binary>=2.9.0
+
+# Additional security packages
+bleach>=6.1.0
+django-ratelimit>=4.1.0

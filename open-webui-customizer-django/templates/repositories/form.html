@@ -1,0 +1,195 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }} - Open WebUI Customizer{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="card-title mb-0">
+                    <i class="fas fa-code-branch me-2"></i>{{ title }}
+                </h4>
+            </div>
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+
+                    <!-- Name Field -->
+                    <div class="mb-3">
+                        <label for="{{ form.name.id_for_label }}" class="form-label">
+                            {{ form.name.label }}
+                            <span class="text-danger">*</span>
+                        </label>
+                        {{ form.name }}
+                        {% if form.name.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.name.errors.0 }}
+                            </div>
+                        {% endif %}
+                        <div class="form-text">{{ form.name.help_text }}</div>
+                    </div>
+
+                    <!-- Repository URL Field -->
+                    <div class="mb-3">
+                        <label for="{{ form.repository_url.id_for_label }}" class="form-label">
+                            {{ form.repository_url.label }}
+                            <span class="text-danger">*</span>
+                        </label>
+                        {{ form.repository_url }}
+                        {% if form.repository_url.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.repository_url.errors.0 }}
+                            </div>
+                        {% endif %}
+                        <div class="form-text">{{ form.repository_url.help_text }}</div>
+
+                        <!-- URL Examples -->
+                        <div class="mt-2">
+                            <details>
+                                <summary class="text-primary cursor-pointer">Show URL examples</summary>
+                                <div class="mt-2 p-3 bg-light rounded">
+                                    <h6>GitHub</h6>
+                                    <code>https://github.com/username/repository</code><br>
+                                    <code>git@github.com:username/repository.git</code>
+
+                                    <h6 class="mt-3">GitLab</h6>
+                                    <code>https://gitlab.com/username/repository</code>
+
+                                    <h6 class="mt-3">Bitbucket</h6>
+                                    <code>https://bitbucket.org/username/repository</code>
+                                </div>
+                            </details>
+                        </div>
+                    </div>
+
+                    <!-- Repository Type Field -->
+                    <div class="mb-3">
+                        <label for="{{ form.repository_type.id_for_label }}" class="form-label">
+                            {{ form.repository_type.label }}
+                            <span class="text-danger">*</span>
+                        </label>
+                        {{ form.repository_type }}
+                        {% if form.repository_type.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.repository_type.errors.0 }}
+                            </div>
+                        {% endif %}
+                        <div class="form-text">{{ form.repository_type.help_text }}</div>
+                    </div>
+
+                    <!-- Default Branch Field -->
+                    <div class="mb-3">
+                        <label for="{{ form.default_branch.id_for_label }}" class="form-label">
+                            {{ form.default_branch.label }}
+                        </label>
+                        {{ form.default_branch }}
+                        {% if form.default_branch.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.default_branch.errors.0 }}
+                            </div>
+                        {% endif %}
+                        <div class="form-text">{{ form.default_branch.help_text }}</div>
+                    </div>
+
+                    <!-- Credential Field -->
+                    <div class="mb-3">
+                        <label for="{{ form.credential.id_for_label }}" class="form-label">
+                            {{ form.credential.label }}
+                        </label>
+                        {{ form.credential }}
+                        {% if form.credential.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.credential.errors.0 }}
+                            </div>
+                        {% endif %}
+                        <div class="form-text">{{ form.credential.help_text }}</div>
+                    </div>
+
+                    <!-- Experimental Checkbox -->
+                    <div class="mb-3">
+                        <div class="form-check">
+                            {{ form.is_experimental }}
+                            <label class="form-check-label" for="{{ form.is_experimental.id_for_label }}">
+                                {{ form.is_experimental.label }}
+                            </label>
+                        </div>
+                        {% if form.is_experimental.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.is_experimental.errors.0 }}
+                            </div>
+                        {% endif %}
+                        <div class="form-text">{{ form.is_experimental.help_text }}</div>
+                    </div>
+
+                    <!-- Metadata Field -->
+                    <div class="mb-3">
+                        <label for="{{ form.metadata.id_for_label }}" class="form-label">
+                            {{ form.metadata.label }}
+                        </label>
+                        {{ form.metadata }}
+                        {% if form.metadata.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.metadata.errors.0 }}
+                            </div>
+                        {% endif %}
+                        <div class="form-text">{{ form.metadata.help_text }}</div>
+                    </div>
+
+                    <!-- Form Actions -->
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'repositories:list' %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-2"></i>{{ submit_text }}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Information Alert -->
+        <div class="alert alert-info mt-3">
+            <i class="fas fa-info-circle me-2"></i>
+            <strong>Repository Setup:</strong> After creating a repository, you can verify its accessibility
+            and sync metadata from the repository detail page. Make sure your credentials have the necessary permissions.
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// Update URL placeholder based on repository type
+document.getElementById('{{ form.repository_type.id_for_label }}').addEventListener('change', function() {
+    const repoType = this.value;
+    const urlField = document.getElementById('{{ form.repository_url.id_for_label }}');
+
+    const placeholders = {
+        'github': 'https://github.com/username/repository',
+        'gitlab': 'https://gitlab.com/username/repository',
+        'bitbucket': 'https://bitbucket.org/username/repository',
+        'generic': 'https://example.com/username/repository'
+    };
+
+    urlField.placeholder = placeholders[repoType] || 'https://example.com/username/repository';
+});
+
+// Form validation
+document.querySelector('form').addEventListener('submit', function(e) {
+    const urlField = document.getElementById('{{ form.repository_url.id_for_label }}');
+
+    try {
+        new URL(urlField.value);
+    } catch (error) {
+        urlField.setCustomValidity('Please enter a valid URL');
+        e.preventDefault();
+        return false;
+    }
+
+    urlField.setCustomValidity('');
+});
+</script>
+{% endblock %}

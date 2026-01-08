@@ -1,0 +1,157 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" class="{% if branding_template %}branding-{{ branding_template.id }}{% endif %}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Open WebUI Customizer{% endblock %}</title>
+
+    <!-- HTMX -->
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <script src="https://unpkg.com/htmx.org@1.9.10/dist/ext/ws.js"></script>
+
+    <!-- Branding CSS Variables -->
+    {% if branding_template %}
+    <style>
+        :root {
+            --primary-color: {{ branding_template.primary_color|default:'#007bff' }};
+            --secondary-color: {{ branding_template.secondary_color|default:'#6c757d' }};
+            --accent-color: {{ branding_template.accent_color|default:'#28a745' }};
+            --background-color: {{ branding_template.background_color|default:'#ffffff' }};
+            --text-color: {{ branding_template.text_color|default:'#000000' }};
+            {% if branding_template.css_variables %}
+                {% for key, value in branding_template.css_variables.items %}
+                    {{ key }}: {{ value }};
+                {% endfor %}
+            {% endif %}
+        }
+    </style>
+    {% endif %}
+
+    <!-- Custom CSS -->
+    {% if branding_template and branding_template.custom_css %}
+    <style>{{ branding_template.custom_css }}</style>
+    {% endif %}
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Custom CSS -->
+    <link href="{% static 'css/main.css' %}" rel="stylesheet">
+
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="{% if branding_template %}branded{% endif %}">
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="{% url 'dashboard' %}">
+                {% if logo_asset %}
+                    <img src="{{ logo_asset.file_url }}"
+                         alt="Logo" height="40" class="me-2">
+                {% endif %}
+                Open WebUI Customizer
+            </a>
+
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'dashboard' %}">Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'credentials:list' %}">Credentials</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'repositories:list' %}">Repositories</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'registries:list' %}">Registries</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'pipelines:list' %}">Pipelines</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'branding:list' %}">Branding</a>
+                    </li>
+                </ul>
+
+                <ul class="navbar-nav">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            API
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="{% url 'swagger-ui' %}" target="_blank">API Docs</a></li>
+                            <li><a class="dropdown-item" href="{% url 'redoc' %}" target="_blank">ReDoc</a></li>
+                        </ul>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'admin:index' %}">Admin</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="container-fluid mt-4">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-light text-center text-muted py-3 mt-5">
+        <div class="container">
+            <p>&copy; 2024 Open WebUI Customizer. Built with Django & HTMX.</p>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- HTMX Configuration -->
+    <script>
+        // HTMX configuration
+        htmx.config.globalViewTransitions = true;
+        htmx.config.useTemplateFragments = true;
+
+        // Add loading indicators
+        document.body.addEventListener('htmx:beforeRequest', function(evt) {
+            const target = evt.target;
+            if (target.hasAttribute('hx-indicator')) {
+                const indicator = document.querySelector(target.getAttribute('hx-indicator'));
+                if (indicator) {
+                    indicator.style.display = 'inline';
+                }
+            }
+        });
+
+        document.body.addEventListener('htmx:afterRequest', function(evt) {
+            const target = evt.target;
+            if (target.hasAttribute('hx-indicator')) {
+                const indicator = document.querySelector(target.getAttribute('hx-indicator'));
+                if (indicator) {
+                    indicator.style.display = 'none';
+                }
+            }
+        });
+
+        // Handle HTMX errors
+        document.body.addEventListener('htmx:responseError', function(evt) {
+            console.error('HTMX Error:', evt.detail);
+            // Show user-friendly error message
+            showToast('An error occurred. Please try again.', 'error');
+        });
+    </script>
+
+    <!-- Toast notifications -->
+    <div class="toast-container position-fixed top-0 end-0 p-3">
+        <div id="toast-container"></div>
+    </div>
+
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>

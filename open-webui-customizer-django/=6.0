@@ -1,0 +1,54 @@
+Collecting Django
+  Downloading django-6.0.1-py3-none-any.whl.metadata (3.9 kB)
+Collecting djangorestframework
+  Using cached djangorestframework-3.16.1-py3-none-any.whl.metadata (11 kB)
+Collecting django-cors-headers
+  Downloading django_cors_headers-4.9.0-py3-none-any.whl.metadata (16 kB)
+Collecting drf-spectacular
+  Downloading drf_spectacular-0.29.0-py3-none-any.whl.metadata (14 kB)
+Collecting django-htmx
+  Downloading django_htmx-1.27.0-py3-none-any.whl.metadata (2.7 kB)
+Collecting asgiref>=3.9.1 (from Django)
+  Downloading asgiref-3.11.0-py3-none-any.whl.metadata (9.3 kB)
+Collecting sqlparse>=0.5.0 (from Django)
+  Downloading sqlparse-0.5.5-py3-none-any.whl.metadata (4.7 kB)
+Collecting uritemplate>=2.0.0 (from drf-spectacular)
+  Downloading uritemplate-4.2.0-py3-none-any.whl.metadata (2.6 kB)
+Collecting PyYAML>=5.1 (from drf-spectacular)
+  Downloading pyyaml-6.0.3-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (2.4 kB)
+Collecting jsonschema>=2.6.0 (from drf-spectacular)
+  Downloading jsonschema-4.26.0-py3-none-any.whl.metadata (7.6 kB)
+Collecting inflection>=0.3.1 (from drf-spectacular)
+  Using cached inflection-0.5.1-py2.py3-none-any.whl.metadata (1.7 kB)
+Collecting attrs>=22.2.0 (from jsonschema>=2.6.0->drf-spectacular)
+  Downloading attrs-25.4.0-py3-none-any.whl.metadata (10 kB)
+Collecting jsonschema-specifications>=2023.03.6 (from jsonschema>=2.6.0->drf-spectacular)
+  Downloading jsonschema_specifications-2025.9.1-py3-none-any.whl.metadata (2.9 kB)
+Collecting referencing>=0.28.4 (from jsonschema>=2.6.0->drf-spectacular)
+  Downloading referencing-0.37.0-py3-none-any.whl.metadata (2.8 kB)
+Collecting rpds-py>=0.25.0 (from jsonschema>=2.6.0->drf-spectacular)
+  Downloading rpds_py-0.30.0-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (4.1 kB)
+Collecting typing-extensions>=4.4.0 (from referencing>=0.28.4->jsonschema>=2.6.0->drf-spectacular)
+  Downloading typing_extensions-4.15.0-py3-none-any.whl.metadata (3.3 kB)
+Downloading django-6.0.1-py3-none-any.whl (8.3 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 8.3/8.3 MB 29.3 MB/s  0:00:00
+Downloading djangorestframework-3.16.1-py3-none-any.whl (1.1 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.1/1.1 MB 35.1 MB/s  0:00:00
+Downloading django_cors_headers-4.9.0-py3-none-any.whl (12 kB)
+Downloading drf_spectacular-0.29.0-py3-none-any.whl (105 kB)
+Downloading django_htmx-1.27.0-py3-none-any.whl (62 kB)
+Downloading asgiref-3.11.0-py3-none-any.whl (24 kB)
+Using cached inflection-0.5.1-py2.py3-none-any.whl (9.5 kB)
+Downloading jsonschema-4.26.0-py3-none-any.whl (90 kB)
+Downloading attrs-25.4.0-py3-none-any.whl (67 kB)
+Downloading jsonschema_specifications-2025.9.1-py3-none-any.whl (18 kB)
+Downloading pyyaml-6.0.3-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (807 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 807.9/807.9 kB 28.7 MB/s  0:00:00
+Downloading referencing-0.37.0-py3-none-any.whl (26 kB)
+Downloading rpds_py-0.30.0-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (394 kB)
+Downloading sqlparse-0.5.5-py3-none-any.whl (46 kB)
+Downloading typing_extensions-4.15.0-py3-none-any.whl (44 kB)
+Downloading uritemplate-4.2.0-py3-none-any.whl (11 kB)
+Installing collected packages: uritemplate, typing-extensions, sqlparse, rpds-py, PyYAML, inflection, attrs, asgiref, referencing, Django, jsonschema-specifications, djangorestframework, django-htmx, django-cors-headers, jsonschema, drf-spectacular
+
+Successfully installed Django-6.0.1 PyYAML-6.0.3 asgiref-3.11.0 attrs-25.4.0 django-cors-headers-4.9.0 django-htmx-1.27.0 djangorestframework-3.16.1 drf-spectacular-0.29.0 inflection-0.5.1 jsonschema-4.26.0 jsonschema-specifications-2025.9.1 referencing-0.37.0 rpds-py-0.30.0 sqlparse-0.5.5 typing-extensions-4.15.0 uritemplate-4.2.0

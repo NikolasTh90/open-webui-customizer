@@ -1,0 +1,32 @@
+-r base.txt
+
+# Testing
+pytest>=8.0.0
+pytest-django>=4.8.0
+pytest-cov>=4.1.0
+pytest-asyncio>=0.23.0
+factory-boy>=3.3.0
+
+# Code quality
+black>=24.0.0
+isort>=5.13.0
+flake8>=7.0.0
+mypy>=1.8.0
+ruff>=0.2.0
+pre-commit>=3.6.0
+
+# Debugging
+django-debug-toolbar>=4.3.0
+ipython>=8.0.0
+
+# Type stubs
+django-stubs>=4.2.0
+djangorestframework-stubs>=3.14.0
+
+# Development database (sqlite3 is built into Python)
+
+# Static files serving
+whitenoise>=6.6.0
+
+# Cache for development
+django-redis>=5.4.0

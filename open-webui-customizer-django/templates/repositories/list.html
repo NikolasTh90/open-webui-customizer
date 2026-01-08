@@ -1,0 +1,247 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Repositories - Open WebUI Customizer{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h1 class="h2 mb-0">
+                    <i class="fas fa-code-branch me-2"></i>Git Repositories
+                </h1>
+                <p class="text-muted mb-0">Manage Git repositories for customization pipelines</p>
+            </div>
+            <a href="{% url 'repositories:create' %}" class="btn btn-primary">
+                <i class="fas fa-plus me-2"></i>Add Repository
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <form method="get" class="row g-3" hx-get="{% url 'repositories:list' %}" hx-target="#repositories-table" hx-swap="innerHTML">
+                    <div class="col-md-3">
+                        <label for="search" class="form-label">Search</label>
+                        <input type="text" class="form-control" id="search" name="search"
+                               value="{{ search_query }}" placeholder="Search repositories...">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="type" class="form-label">Type</label>
+                        <select class="form-select" id="type" name="type">
+                            <option value="">All Types</option>
+                            {% for type_value, type_display in repository_types %}
+                            <option value="{{ type_value }}" {% if current_type == type_value %}selected{% endif %}>
+                                {{ type_display }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="verification_status" class="form-label">Verification Status</label>
+                        <select class="form-select" id="verification_status" name="verification_status">
+                            <option value="">All Statuses</option>
+                            {% for status_value, status_display in verification_statuses %}
+                            <option value="{{ status_value }}" {% if current_verification_status == status_value %}selected{% endif %}>
+                                {{ status_display }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3 d-flex align-items-end">
+                        <div class="form-check me-3">
+                            <input class="form-check-input" type="checkbox" id="include_inactive" name="include_inactive" value="true">
+                            <label class="form-check-label" for="include_inactive">
+                                Include Inactive
+                            </label>
+                        </div>
+                        <button type="submit" class="btn btn-outline-primary me-2">
+                            <i class="fas fa-search me-1"></i>Filter
+                        </button>
+                        <a href="{% url 'repositories:list' %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-times me-1"></i>Clear
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Repositories Table -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body p-0">
+                <div id="repositories-table">
+                    {% if repositories %}
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Type</th>
+                                    <th>URL</th>
+                                    <th>Verification</th>
+                                    <th>Last Sync</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for repository in repositories %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <i class="fas fa-code-branch text-primary me-2"></i>
+                                            <div>
+                                                <a href="{% url 'repositories:detail' repository.pk %}" class="text-decoration-none fw-semibold">
+                                                    {{ repository.name }}
+                                                </a>
+                                                {% if repository.description %}
+                                                <br><small class="text-muted">{{ repository.description|truncatechars:50 }}</small>
+                                                {% endif %}
+                                                {% if repository.is_experimental %}
+                                                <br><span class="badge bg-warning">Experimental</span>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-secondary">{{ repository.get_repository_type_display }}</span>
+                                    </td>
+                                    <td>
+                                        <a href="{{ repository.repository_url }}" target="_blank" class="text-truncate d-inline-block" style="max-width: 300px;">
+                                            {{ repository.repository_url }}
+                                            <i class="fas fa-external-link-alt ms-1 small"></i>
+                                        </a>
+                                    </td>
+                                    <td>
+                                        {% if repository.is_verified %}
+                                            <span class="badge bg-success">
+                                                <i class="fas fa-check me-1"></i>{{ repository.get_verification_status_display }}
+                                            </span>
+                                        {% else %}
+                                            <span class="badge bg-warning">
+                                                <i class="fas fa-exclamation-triangle me-1"></i>{{ repository.get_verification_status_display }}
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if repository.last_commit_date %}
+                                            <span class="text-muted">{{ repository.last_commit_date|timesince }}</span>
+                                            {% if repository.days_since_last_commit > 30 %}
+                                            <br><small class="text-danger">Outdated</small>
+                                            {% endif %}
+                                        {% else %}
+                                            <span class="text-muted">Never</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <a href="{% url 'repositories:detail' repository.pk %}" class="btn btn-sm btn-outline-primary">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            <a href="{% url 'repositories:update' repository.pk %}" class="btn btn-sm btn-outline-secondary">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            <button class="btn btn-sm btn-outline-info"
+                                                    hx-post="{% url 'repositories:verify' repository.pk %}"
+                                                    hx-target="closest tr"
+                                                    hx-swap="outerHTML">
+                                                <i class="fas fa-check-circle"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-danger"
+                                                    hx-post="{% url 'repositories:delete' repository.pk %}"
+                                                    hx-confirm="Are you sure you want to deactivate this repository?"
+                                                    hx-target="closest tr"
+                                                    hx-swap="outerHTML">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Pagination -->
+                    {% if is_paginated %}
+                    <div class="card-footer">
+                        <nav aria-label="Repository pagination">
+                            <ul class="pagination justify-content-center mb-0">
+                                {% if page_obj.has_previous %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if current_type %}&type={{ current_type }}{% endif %}{% if current_verification_status %}&verification_status={{ current_verification_status }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}">
+                                        Previous
+                                    </a>
+                                </li>
+                                {% endif %}
+
+                                {% for num in page_obj.paginator.page_range %}
+                                {% if page_obj.number == num %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ num }}</span>
+                                </li>
+                                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ num }}{% if current_type %}&type={{ current_type }}{% endif %}{% if current_verification_status %}&verification_status={{ current_verification_status }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}">
+                                        {{ num }}
+                                    </a>
+                                </li>
+                                {% endif %}
+                                {% endfor %}
+
+                                {% if page_obj.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if current_type %}&type={{ current_type }}{% endif %}{% if current_verification_status %}&verification_status={{ current_verification_status }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}">
+                                        Next
+                                    </a>
+                                </li>
+                                {% endif %}
+                            </ul>
+                        </nav>
+                    </div>
+                    {% endif %}
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-code-branch fa-4x text-muted mb-3"></i>
+                        <h4 class="text-muted">No repositories found</h4>
+                        <p class="text-muted">Get started by adding your first Git repository.</p>
+                        <a href="{% url 'repositories:create' %}" class="btn btn-primary">
+                            <i class="fas fa-plus me-2"></i>Add Your First Repository
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// Auto-submit form on filter change
+document.querySelectorAll('#search, #type, #verification_status, #include_inactive').forEach(element => {
+    element.addEventListener('change', function() {
+        this.closest('form').submit();
+    });
+});
+
+// Handle delete confirmation
+document.addEventListener('htmx:confirm', function(evt) {
+    if (evt.detail.question) {
+        evt.preventDefault();
+        if (confirm(evt.detail.question)) {
+            evt.detail.issueRequest();
+        }
+    }
+});
+</script>
+{% endblock %}
