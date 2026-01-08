@@ -1,240 +1,505 @@
 """
-Application settings and configuration management.
+Configuration settings management for Open WebUI Customizer.
 
-This module provides centralized configuration management using Pydantic settings
-for type safety and validation. It handles environment variables, default values,
-and configuration validation.
+This module provides centralized configuration management using Pydantic
+for type validation and environment variable handling with tiered settings
+for different environments (base, development, staging, production).
+
+Author: Open WebUI Customizer Team
 """
 
 import os
-import secrets
+from typing import Optional, List, Dict, Any, Type
 from pathlib import Path
-from typing import List, Optional
-
-from pydantic import Field, validator
 from pydantic_settings import BaseSettings
+from pydantic import Field, validator
 
-
-class DatabaseSettings(BaseSettings):
-    """Database configuration settings."""
-
-    url: str = Field(default="sqlite:///./database.db", env="DATABASE_URL")
-    """Database connection URL."""
-
-    echo: bool = Field(default=False, env="DATABASE_ECHO")
-    """Enable SQL query logging."""
-
-    pool_size: int = Field(default=5, env="DATABASE_POOL_SIZE")
-    """Database connection pool size."""
-
-    max_overflow: int = Field(default=10, env="DATABASE_MAX_OVERFLOW")
-    """Maximum number of connections to allow beyond pool_size."""
-
-    class Config:
-        env_prefix = "DB_"
-
-
-class FileStorageSettings(BaseSettings):
-    """File storage configuration settings."""
-
-    base_dir: Path = Field(default=Path("./customization"), env="FILE_STORAGE_BASE_DIR")
-    """Base directory for file storage."""
-
-    upload_dir: Path = Field(default=Path("./customization/static"), env="FILE_STORAGE_UPLOAD_DIR")
-    """Directory for uploaded files."""
-
-    max_file_size: int = Field(default=10 * 1024 * 1024, env="FILE_STORAGE_MAX_SIZE")  # 10MB
-    """Maximum file size in bytes."""
-
-    allowed_extensions: List[str] = Field(
-        default=[
-            ".png", ".jpg", ".jpeg", ".gif", ".svg", ".ico",
-            ".css", ".js", ".json", ".html", ".txt", ".md"
-        ],
-        env="FILE_STORAGE_ALLOWED_EXTENSIONS"
+class BaseDatabaseSettings(BaseSettings):
+    """Base database configuration settings."""
+    
+    # Database URL configuration
+    database_url: str = Field(
+        default="sqlite:///./customizer.db",
+        description="Database connection URL"
     )
-    """List of allowed file extensions."""
-
-    @validator("base_dir", "upload_dir", pre=True)
-    def convert_to_path(cls, v):
-        """Convert string paths to Path objects."""
-        return Path(v) if isinstance(v, str) else v
-
-    class Config:
-        env_prefix = "STORAGE_"
-
-
-class APISettings(BaseSettings):
-    """API configuration settings."""
-
-    host: str = Field(default="127.0.0.1", env="API_HOST")
-    """API server host."""
-
-    port: int = Field(default=8000, env="API_PORT")
-    """API server port."""
-
-    reload: bool = Field(default=False, env="API_RELOAD")
-    """Enable auto-reload for development."""
-
-    workers: int = Field(default=1, env="API_WORKERS")
-    """Number of API workers."""
-
-    secret_key: str = Field(default_factory=lambda: secrets.token_urlsafe(32), env="API_SECRET_KEY")
-    """Secret key for JWT tokens and other cryptographic operations."""
-
-    debug: bool = Field(default=False, env="API_DEBUG")
-    """Enable debug mode."""
-
-    cors_origins: List[str] = Field(default=["http://localhost:3000", "http://localhost:8000"], env="API_CORS_ORIGINS")
-    """List of allowed CORS origins."""
-
-    class Config:
-        env_prefix = "API_"
-
-
-class LoggingSettings(BaseSettings):
-    """Logging configuration settings."""
-
-    level: str = Field(default="INFO", env="LOG_LEVEL")
-    """Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)."""
-
-    format: str = Field(
-        default="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-        env="LOG_FORMAT"
+    
+    # Database connection pool settings
+    pool_size: int = Field(
+        default=5,
+        description="Database connection pool size"
     )
-    """Log message format."""
-
-    file_path: Optional[Path] = Field(default=None, env="LOG_FILE_PATH")
-    """Path to log file. If None, logs to console only."""
-
-    max_file_size: int = Field(default=10 * 1024 * 1024, env="LOG_MAX_SIZE")  # 10MB
-    """Maximum log file size before rotation."""
-
-    backup_count: int = Field(default=5, env="LOG_BACKUP_COUNT")
-    """Number of backup log files to keep."""
-
-    class Config:
-        env_prefix = "LOG_"
-
-
-class BrandingSettings(BaseSettings):
-    """Branding-specific configuration settings."""
-
-    default_template_name: str = Field(default="Default Branding", env="BRANDING_DEFAULT_TEMPLATE")
-    """Default branding template name."""
-
-    supported_file_types: List[str] = Field(
-        default=["logo", "favicon", "theme", "manifest", "other"],
-        env="BRANDING_SUPPORTED_TYPES"
+    
+    max_overflow: int = Field(
+        default=10,
+        description="Maximum number of connections to allow beyond pool_size"
     )
-    """Supported branding file types."""
-
-    text_file_extensions: List[str] = Field(
-        default=[".js", ".ts", ".jsx", ".tsx", ".html", ".css", ".scss", ".json", ".md", ".txt", ".py"],
-        env="BRANDING_TEXT_EXTENSIONS"
+    
+    pool_timeout: int = Field(
+        default=30,
+        description="Timeout in seconds for getting a connection from the pool"
     )
-    """File extensions that should be processed for text replacements."""
+    
+    pool_recycle: int = Field(
+        default=3600,
+        description="Time in seconds after which a connection is recreated"
+    )
+    
+    echo: bool = Field(
+        default=False,
+        description="Enable SQLAlchemy query logging"
+    )
 
-    max_replacement_rules: int = Field(default=100, env="BRANDING_MAX_RULES")
-    """Maximum number of replacement rules per template."""
+class DevDatabaseSettings(BaseDatabaseSettings):
+    """Development database settings with relaxed restrictions."""
+    
+    echo: bool = True
+    auto_create_tables: bool = Field(
+        default=True,
+        description="Automatically create tables on startup"
+    )
 
-    class Config:
-        env_prefix = "BRANDING_"
+class StagingDatabaseSettings(BaseDatabaseSettings):
+    """Staging database settings."""
+    
+    auto_create_tables: bool = Field(
+        default=True,
+        description="Automatically create tables on startup"
+    )
 
+class ProductionDatabaseSettings(BaseDatabaseSettings):
+    """Production database settings with strict security."""
+    
+    auto_create_tables: bool = Field(
+        default=False,
+        description="Require Alembic migrations for table creation"
+    )
 
-class PipelineSettings(BaseSettings):
-    """Pipeline execution configuration settings."""
+class BaseSecuritySettings(BaseSettings):
+    """Base security configuration settings."""
+    
+    # JWT settings
+    secret_key: str = Field(
+        default="your-secret-key-change-in-production",
+        description="Secret key for JWT token signing"
+    )
+    
+    algorithm: str = Field(
+        default="HS256",
+        description="JWT algorithm for token signing"
+    )
+    
+    access_token_expire_minutes: int = Field(
+        default=30,
+        description="Access token expiration time in minutes"
+    )
+    
+    # Encryption settings
+    require_encryption_key: bool = Field(
+        default=True,
+        description="Require encryption key for credential storage"
+    )
+    
+    encryption_key: Optional[str] = Field(
+        default=None,
+        description="Master encryption key for credential storage"
+    )
+    
+    # CORS settings
+    cors_origins: List[str] = Field(
+        default=["http://localhost:3000", "http://localhost:8080"],
+        description="Allowed CORS origins"
+    )
+    
+    # Rate limiting
+    rate_limit_enabled: bool = Field(
+        default=True,
+        description="Enable API rate limiting"
+    )
+    
+    rate_limit_requests: int = Field(
+        default=100,
+        description="Number of requests allowed per window"
+    )
+    
+    rate_limit_window: int = Field(
+        default=60,
+        description="Rate limit time window in seconds"
+    )
+    
+    # Error handling
+    detailed_errors: bool = Field(
+        default=False,
+        description="Include detailed error information in API responses"
+    )
 
-    default_steps: List[str] = Field(default=["clone", "branding", "build"], env="PIPELINE_DEFAULT_STEPS")
-    """Default pipeline steps to execute."""
+class DevSecuritySettings(BaseSecuritySettings):
+    """Development security settings with relaxed restrictions."""
+    
+    secret_key: str = "dev-secret-key-not-for-production"
+    require_encryption_key: bool = False
+    encryption_key: str = "dev-encryption-key-32-bytes-long"
+    cors_origins: List[str] = ["*"]
+    rate_limit_enabled: bool = False
+    detailed_errors: bool = True
 
-    timeout_seconds: int = Field(default=3600, env="PIPELINE_TIMEOUT")  # 1 hour
-    """Maximum execution time for pipeline runs."""
+class StagingSecuritySettings(BaseSecuritySettings):
+    """Staging security settings."""
+    
+    require_encryption_key: bool = False
+    encryption_key: str = "staging-encryption-key-32-bytes"
+    cors_origins: List[str] = ["https://staging.example.com", "http://localhost:3000"]
+    detailed_errors: bool = True
 
-    max_concurrent_runs: int = Field(default=3, env="PIPELINE_MAX_CONCURRENT")
-    """Maximum number of concurrent pipeline runs."""
+class ProductionSecuritySettings(BaseSecuritySettings):
+    """Production security settings with strict requirements."""
+    
+    cors_origins: List[str] = []
+    detailed_errors: bool = False
 
-    working_directory: Path = Field(default=Path("."), env="PIPELINE_WORK_DIR")
-    """Working directory for pipeline operations."""
+class BaseGitSettings(BaseSettings):
+    """Base Git operations configuration settings."""
+    
+    # Git authentication timeout
+    git_timeout: int = Field(
+        default=300,
+        description="Git operation timeout in seconds"
+    )
+    
+    # SSH settings
+    ssh_key_size: int = Field(
+        default=2048,
+        description="Default SSH key size in bits"
+    )
+    
+    ssh_known_hosts_file: Optional[str] = Field(
+        default=None,
+        description="Path to SSH known_hosts file"
+    )
+    
+    # Repository validation
+    max_repo_size_mb: int = Field(
+        default=1000,
+        description="Maximum repository size in MB for cloning"
+    )
+    
+    allowed_git_hosts: List[str] = Field(
+        default=["github.com", "gitlab.com", "bitbucket.org"],
+        description="List of allowed Git hosts for repositories"
+    )
+    
+    allow_any_git_host: bool = Field(
+        default=False,
+        description="Allow cloning from any Git host"
+    )
 
-    @validator("working_directory", pre=True)
-    def convert_to_path(cls, v):
-        """Convert string paths to Path objects."""
-        return Path(v) if isinstance(v, str) else v
+class DevGitSettings(BaseGitSettings):
+    """Development Git settings with relaxed restrictions."""
+    
+    git_timeout: int = 3600  # 1 hour for development
+    max_repo_size_mb: int = 5000
+    allow_any_git_host: bool = True
 
-    class Config:
-        env_prefix = "PIPELINE_"
+class StagingGitSettings(BaseGitSettings):
+    """Staging Git settings."""
+    
+    allowed_git_hosts: List[str] = ["github.com", "gitlab.com", "bitbucket.org", "dev.example.com"]
 
+class ProductionGitSettings(BaseGitSettings):
+    """Production Git settings with strict host validation."""
 
-class Settings(BaseSettings):
-    """
-    Main application settings.
+class BasePipelineSettings(BaseSettings):
+    """Base pipeline execution configuration settings."""
+    
+    # Build settings
+    build_timeout: int = Field(
+        default=1800,
+        description="Pipeline build timeout in seconds (30 minutes)"
+    )
+    
+    max_concurrent_builds: int = Field(
+        default=3,
+        description="Maximum number of concurrent pipeline builds"
+    )
+    
+    # Workspace settings
+    workspace_dir: str = Field(
+        default="/tmp/open_webui_builds",
+        description="Directory for temporary build workspaces"
+    )
+    
+    workspace_cleanup_hours: int = Field(
+        default=24,
+        description="Hours after which build workspaces are automatically cleaned up"
+    )
+    
+    # Output settings
+    default_retention_days: int = Field(
+        default=7,
+        description="Default retention period for build outputs in days"
+    )
+    
+    max_output_size_mb: int = Field(
+        default=500,
+        description="Maximum build output size in MB"
+    )
 
-    This class combines all configuration settings and provides a single
-    point of access for application configuration.
-    """
+class DevPipelineSettings(BasePipelineSettings):
+    """Development pipeline settings with relaxed limits."""
+    
+    build_timeout: int = 3600
+    max_concurrent_builds: int = 1
+    workspace_cleanup_hours: int = 1
+    default_retention_days: int = 1
+    max_output_size_mb: int = 1000
 
-    # Sub-settings
-    database: DatabaseSettings = Field(default_factory=DatabaseSettings)
-    file_storage: FileStorageSettings = Field(default_factory=FileStorageSettings)
-    api: APISettings = Field(default_factory=APISettings)
-    logging: LoggingSettings = Field(default_factory=LoggingSettings)
-    branding: BrandingSettings = Field(default_factory=BrandingSettings)
-    pipeline: PipelineSettings = Field(default_factory=PipelineSettings)
+class StagingPipelineSettings(BasePipelineSettings):
+    """Staging pipeline settings."""
+    
+    build_timeout: int = 2700
 
-    # Application metadata
-    app_name: str = Field(default="Open WebUI Customizer", env="APP_NAME")
-    version: str = Field(default="1.0.0", env="APP_VERSION")
-    environment: str = Field(default="development", env="APP_ENV")
+class ProductionPipelineSettings(BasePipelineSettings):
+    """Production pipeline settings."""
 
-    # Project paths
-    project_root: Path = Field(default_factory=lambda: Path(__file__).parent.parent.parent)
-    """Root directory of the project."""
+class BaseRegistrySettings(BaseSettings):
+    """Base container registry configuration settings."""
+    
+    # Registry connection settings
+    registry_timeout: int = Field(
+        default=600,
+        description="Container registry operation timeout in seconds"
+    )
+    
+    # Docker settings
+    docker_api_version: str = Field(
+        default="auto",
+        description="Docker API version to use"
+    )
+    
+    docker_base_url: str = Field(
+        default="unix://var/run/docker.sock",
+        description="Docker daemon connection URL"
+    )
+    
+    # Image settings
+    max_image_size_gb: int = Field(
+        default=5,
+        description="Maximum Docker image size in GB"
+    )
+    
+    image_pull_timeout: int = Field(
+        default=900,
+        description="Docker image pull timeout in seconds"
+    )
 
-    @validator("project_root", pre=True)
-    def set_project_root(cls, v):
-        """Set the project root directory."""
-        if v is None:
-            return Path(__file__).parent.parent.parent
-        return Path(v) if isinstance(v, str) else v
+class DevRegistrySettings(BaseRegistrySettings):
+    """Development registry settings."""
 
+class StagingRegistrySettings(BaseRegistrySettings):
+    """Staging registry settings."""
+
+class ProductionRegistrySettings(BaseRegistrySettings):
+    """Production registry settings."""
+
+class BaseLoggingSettings(BaseSettings):
+    """Base logging configuration settings."""
+    
+    # Log level
+    log_level: str = Field(
+        default="INFO",
+        description="Application log level (DEBUG, INFO, WARNING, ERROR, CRITICAL)"
+    )
+    
+    # Log format
+    log_format: str = Field(
+        default="json",
+        description="Log format (json or text)"
+    )
+    
+    # File logging
+    log_file: Optional[str] = Field(
+        default=None,
+        description="Path to log file (if not specified, logs to console)"
+    )
+    
+    log_max_size_mb: int = Field(
+        default=100,
+        description="Maximum log file size in MB before rotation"
+    )
+    
+    log_backup_count: int = Field(
+        default=5,
+        description="Number of log backup files to keep"
+    )
+    
+    # Structured logging
+    enable_structured_logging: bool = Field(
+        default=True,
+        description="Enable structured logging with context"
+    )
+
+class DevLoggingSettings(BaseLoggingSettings):
+    """Development logging settings."""
+    
+    log_level: str = "DEBUG"
+    log_format: str = "text"
+    enable_structured_logging: bool = False
+
+class StagingLoggingSettings(BaseLoggingSettings):
+    """Staging logging settings."""
+    
+    log_level: str = "INFO"
+
+class ProductionLoggingSettings(BaseLoggingSettings):
+    """Production logging settings."""
+    
+    log_level: str = "WARNING"
+
+class BaseAPISettings(BaseSettings):
+    """Base API configuration settings."""
+    
+    # API settings
+    api_title: str = Field(
+        default="Open WebUI Customizer API",
+        description="API title for documentation"
+    )
+    
+    api_description: str = Field(
+        default="API for customizing Open WebUI with custom branding and builds",
+        description="API description"
+    )
+    
+    api_version: str = Field(
+        default="1.0.0",
+        description="API version"
+    )
+    
+    # Request limits
+    max_request_size_mb: int = Field(
+        default=100,
+        description="Maximum request size in MB"
+    )
+    
+    # Pagination defaults
+    default_page_size: int = Field(
+        default=50,
+        description="Default pagination page size"
+    )
+    
+    max_page_size: int = Field(
+        default=1000,
+        description="Maximum pagination page size"
+    )
+
+class DevAPISettings(BaseAPISettings):
+    """Development API settings."""
+    
+    max_request_size_mb: int = 1000
+
+class StagingAPISettings(BaseAPISettings):
+    """Staging API settings."""
+
+class ProductionAPISettings(BaseAPISettings):
+    """Production API settings."""
+
+class BaseSettings(BaseSettings):
+    """Base application settings class with common defaults."""
+    
+    # Environment
+    environment: str = Field(
+        default="development",
+        description="Application environment (development, staging, production)"
+    )
+    
+    debug: bool = Field(
+        default=False,
+        description="Enable debug mode"
+    )
+    
+    # Host and port
+    host: str = Field(
+        default="0.0.0.0",
+        description="Server host"
+    )
+    
+    port: int = Field(
+        default=8000,
+        description="Server port"
+    )
+    
     class Config:
         """Pydantic configuration."""
         env_file = ".env"
         env_file_encoding = "utf-8"
+        env_nested_delimiter = "__"
         case_sensitive = False
+        
+        # Allow field values from environment variables
+        # Example: DATABASE_URL=postgresql://user:pass@localhost/db
+        # Example: SECURITY__SECRET_KEY=my-secret-key
 
+class DevSettings(BaseSettings):
+    """Development settings with relaxed restrictions."""
+    
+    debug: bool = True
+    
+    # Sub-settings
+    database: DevDatabaseSettings = Field(default_factory=DevDatabaseSettings)
+    security: DevSecuritySettings = Field(default_factory=DevSecuritySettings)
+    git: DevGitSettings = Field(default_factory=DevGitSettings)
+    pipeline: DevPipelineSettings = Field(default_factory=DevPipelineSettings)
+    registry: DevRegistrySettings = Field(default_factory=DevRegistrySettings)
+    logging: DevLoggingSettings = Field(default_factory=DevLoggingSettings)
+    api: DevAPISettings = Field(default_factory=DevAPISettings)
+
+class StagingSettings(BaseSettings):
+    """Staging settings."""
+    
+    debug: bool = False
+    
+    # Sub-settings
+    database: StagingDatabaseSettings = Field(default_factory=StagingDatabaseSettings)
+    security: StagingSecuritySettings = Field(default_factory=StagingSecuritySettings)
+    git: StagingGitSettings = Field(default_factory=StagingGitSettings)
+    pipeline: StagingPipelineSettings = Field(default_factory=StagingPipelineSettings)
+    registry: StagingRegistrySettings = Field(default_factory=StagingRegistrySettings)
+    logging: StagingLoggingSettings = Field(default_factory=StagingLoggingSettings)
+    api: StagingAPISettings = Field(default_factory=StagingAPISettings)
+
+class ProductionSettings(BaseSettings):
+    """Production settings with strict security."""
+    
+    debug: bool = False
+    
+    # Sub-settings
+    database: ProductionDatabaseSettings = Field(default_factory=ProductionDatabaseSettings)
+    security: ProductionSecuritySettings = Field(default_factory=ProductionSecuritySettings)
+    git: ProductionGitSettings = Field(default_factory=ProductionGitSettings)
+    pipeline: ProductionPipelineSettings = Field(default_factory=ProductionPipelineSettings)
+    registry: ProductionRegistrySettings = Field(default_factory=ProductionRegistrySettings)
+    logging: ProductionLoggingSettings = Field(default_factory=ProductionLoggingSettings)
+    api: ProductionAPISettings = Field(default_factory=ProductionAPISettings)
+
+def create_settings() -> BaseSettings:
+    """Create appropriate settings instance based on environment."""
+    environment = os.getenv("ENVIRONMENT", "development").lower()
+    
+    if environment == "production":
+        return ProductionSettings()
+    elif environment == "staging":
+        return StagingSettings()
+    else:
+        # Default to development for any unspecified environment
+        return DevSettings()
 
 # Global settings instance
-_settings: Optional[Settings] = None
+settings = create_settings()
 
+def get_settings() -> BaseSettings:
+    """Get the global settings instance."""
+    return settings
 
-def get_settings() -> Settings:
-    """
-    Get the global application settings instance.
-
-    This function implements the singleton pattern to ensure only one
-    settings instance exists throughout the application lifecycle.
-
-    Returns:
-        Settings: The global application settings instance.
-    """
-    global _settings
-    if _settings is None:
-        _settings = Settings()
-    return _settings
-
-
-def reload_settings() -> Settings:
-    """
-    Reload settings from environment variables.
-
-    This function forces a reload of settings, useful for testing
-    or when environment variables change during runtime.
-
-    Returns:
-        Settings: A new settings instance with current environment values.
-    """
-    global _settings
-    _settings = Settings()
-    return _settings
+def reload_settings() -> BaseSettings:
+    """Reload settings from environment variables."""
+    global settings
+    settings = create_settings()
+    return settings

@@ -15,6 +15,7 @@ from fastapi import FastAPI, Depends, HTTPException, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 
 # Add the parent directory to the path for proper imports
@@ -23,25 +24,80 @@ sys.path.insert(0, str(parent_dir))
 
 from app.config import get_settings
 from app.utils.logging import setup_logging
-from app.models.database import engine, Base, SessionLocal
+from app.models.database import init_database, engine, Base, SessionLocal
 from app.api.branding import router as branding_router
 from app.api.configuration import router as config_router
 from app.api.registry import router as registry_router
 from app.api.pipeline import router as pipeline_router
+from app.api.credential import router as credential_router
+from app.api.git_repository import router as git_repo_router
+from app.api.enhanced_pipeline import router as enhanced_pipeline_router
 from app.services.branding import get_branding_templates
 from app.services.registry import get_all_registries
 from app.services.pipeline import get_all_pipeline_runs, get_pipeline_run
 
-# Database tables are managed by Alembic migrations
-# Do not create tables automatically
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Application lifespan manager with database initialization."""
+    # Get settings and configure logging
+    settings = get_settings()
+    
+    # Setup logging based on environment
+    setup_logging(settings.logging.log_level, settings.logging.log_file)
+    
+    # Initialize database (tables are handled in database.py based on environment)
+    await startup_db()
+    
+    yield
+    
+    # Shutdown cleanup
+    await cleanup_db()
 
-app = FastAPI(title="Open WebUI Customizer")
+async def startup_db():
+    """Initialize database on startup."""
+    settings = get_settings()
+    
+    print(f"Starting Open WebUI Customizer in {settings.environment} mode")
+    print(f"Debug mode: {settings.debug}")
+    print(f"Auto-create tables: {getattr(settings.database, 'auto_create_tables', 'N/A')}")
+    print(f"Database URL: {settings.database.database_url}")
+    
+    # Database initialization is now handled in models/database.py
+    # based on the auto_create_tables setting
+
+async def cleanup_db():
+    """Cleanup database connections on shutdown."""
+    # Dispose of the database engine
+    engine.dispose()
+    print("Database connections closed")
+
+# Create FastAPI app with lifespan
+app = FastAPI(
+    title="Open WebUI Customizer",
+    description="API for customizing Open WebUI with custom branding and builds",
+    version="1.0.0",
+    lifespan=lifespan,
+    debug=get_settings().debug
+)
+
+# Configure CORS based on environment settings
+cors_settings = get_settings().security.cors_origins
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=cors_settings,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Include API routers
 app.include_router(branding_router)
 app.include_router(config_router)
 app.include_router(registry_router)
 app.include_router(pipeline_router)
+app.include_router(credential_router)
+app.include_router(git_repo_router)
+app.include_router(enhanced_pipeline_router)
 
 # Mount static files directory
 static_dir = os.path.join(os.path.dirname(__file__), "static")
@@ -62,11 +118,9 @@ templates = Jinja2Templates(directory=templates_dir)
 
 # Dependency to get DB session
 def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+    """FastAPI dependency to get database session."""
+    from app.models.database import get_db as get_db_session
+    return get_db_session()
 
 # UI Routes
 @app.get("/", response_class=HTMLResponse)
@@ -102,6 +156,21 @@ async def manage_branding_assets(request: Request, template_id: int, db: Session
 @app.get("/configuration", response_class=HTMLResponse)
 async def configuration_page(request: Request, db: Session = Depends(get_db)):
     return templates.TemplateResponse("configuration.html", {"request": request})
+
+@app.get("/enhanced-pipeline", response_class=HTMLResponse)
+async def enhanced_pipeline_page(request: Request, db: Session = Depends(get_db)):
+    """Render the enhanced pipeline page with custom fork cloning support."""
+    return templates.TemplateResponse("enhanced_pipeline.html", {"request": request})
+
+@app.get("/repositories", response_class=HTMLResponse)
+async def repositories_page(request: Request, db: Session = Depends(get_db)):
+    """Render the Git repositories management page."""
+    return templates.TemplateResponse("repositories.html", {"request": request})
+
+@app.get("/credentials", response_class=HTMLResponse)
+async def credentials_page(request: Request, db: Session = Depends(get_db)):
+    """Render the credentials management page."""
+    return templates.TemplateResponse("credentials.html", {"request": request})
 
 @app.get("/replacement-tool", response_class=HTMLResponse)
 async def replacement_tool_page(request: Request):

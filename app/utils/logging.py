@@ -1,179 +1,334 @@
 """
-Logging configuration and utilities.
+Logging utilities for the Open WebUI Customizer application.
 
-This module provides centralized logging configuration and utilities
-for the Open WebUI Customizer application. It supports both console
-and file logging with proper formatting and log rotation.
+This module provides a centralized logging system with structured logging
+support for better monitoring and debugging.
+
+Author: Open WebUI Customizer Team
 """
 
 import logging
-import logging.handlers
 import sys
+import json
+from datetime import datetime
+from typing import Dict, Any, Optional, Callable
 from pathlib import Path
-from typing import Optional
+from functools import wraps
 
-from app.config import get_settings
+try:
+    from flask import request
+except ImportError:
+    # Flask not available, use None for request
+    request = None
+
+
+class JSONFormatter(logging.Formatter):
+    """
+    Custom JSON formatter for structured logging.
+    
+    Formats log records as JSON objects with metadata for better parsing
+    and analysis in log management systems.
+    """
+    
+    def format(self, record: logging.LogRecord) -> str:
+        """
+        Format a log record as JSON.
+        
+        Args:
+            record: Log record to format
+            
+        Returns:
+            JSON string representation of the log record
+        """
+        # Create base log entry
+        log_entry = {
+            'timestamp': datetime.utcnow().isoformat() + 'Z',
+            'level': record.levelname,
+            'logger': record.name,
+            'message': record.getMessage(),
+            'module': record.module,
+            'function': record.funcName,
+            'line': record.lineno
+        }
+        
+        # Add exception info if present
+        if record.exc_info:
+            log_entry['exception'] = self.formatException(record.exc_info)
+        
+        # Add stack trace if present
+        if record.stack_info:
+            log_entry['stack_trace'] = record.stack_info
+        
+        # Add extra fields
+        if hasattr(record, '__dict__'):
+            extra_fields = {
+                k: v for k, v in record.__dict__.items()
+                if k not in [
+                    'name', 'msg', 'args', 'levelname', 'levelno', 'pathname',
+                    'filename', 'module', 'lineno', 'funcName', 'created',
+                    'msecs', 'relativeCreated', 'thread', 'threadName',
+                    'processName', 'process', 'getMessage', 'exc_info',
+                    'exc_text', 'stack_info'
+                ]
+            }
+            if extra_fields:
+                log_entry['extra'] = extra_fields
+        
+        return json.dumps(log_entry, default=str)
+
+
+class ColoredFormatter(logging.Formatter):
+    """
+    Console formatter with colors for better readability.
+    
+    Uses ANSI color codes to highlight different log levels for
+    development and local testing.
+    """
+    
+    # ANSI color codes
+    COLORS = {
+        'DEBUG': '\033[36m',    # Cyan
+        'INFO': '\033[32m',     # Green
+        'WARNING': '\033[33m',  # Yellow
+        'ERROR': '\033[31m',    # Red
+        'CRITICAL': '\033[35m', # Magenta
+        'RESET': '\033[0m'      # Reset
+    }
+    
+    def format(self, record: logging.LogRecord) -> str:
+        """
+        Format a log record with colors.
+        
+        Args:
+            record: Log record to format
+            
+        Returns:
+            Colored string representation of the log record
+        """
+        # Add color to level name
+        level_color = self.COLORS.get(record.levelname, self.COLORS['RESET'])
+        reset = self.COLORS['RESET']
+        
+        # Custom format with colors
+        formatter = logging.Formatter(
+            f'{level_color}%(levelname)s{reset} '
+            f'%(asctime)s '
+            f'%(name)s '
+            f'%(message)s'
+        )
+        
+        return formatter.format(record)
 
 
 def setup_logging(
-    level: Optional[str] = None,
-    format_string: Optional[str] = None,
-    log_file: Optional[Path] = None,
-    max_file_size: Optional[int] = None,
-    backup_count: Optional[int] = None
-) -> logging.Logger:
+    level: str = 'INFO',
+    format_type: str = 'json',
+    log_file: Optional[str] = None,
+    max_file_size: int = 10 * 1024 * 1024,  # 10MB
+    backup_count: int = 5
+) -> None:
     """
     Set up application logging configuration.
-
-    This function configures the root logger with appropriate handlers
-    for console and file logging based on the provided settings.
-
+    
     Args:
-        level: Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL).
-               If None, uses settings from configuration.
-        format_string: Log message format string.
-                      If None, uses settings from configuration.
-        log_file: Path to log file. If None, uses settings from configuration.
-        max_file_size: Maximum log file size before rotation.
-                      If None, uses settings from configuration.
-        backup_count: Number of backup log files to keep.
-                     If None, uses settings from configuration.
-
-    Returns:
-        logging.Logger: The configured root logger.
+        level: Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+        format_type: 'json' for structured logs, 'console' for colored output
+        log_file: Optional file to write logs to
+        max_file_size: Maximum log file size in bytes
+        backup_count: Number of backup log files to keep
     """
-    settings = get_settings()
-
-    # Use provided values or fall back to settings
-    log_level = level or settings.logging.level
-    log_format = format_string or settings.logging.format
-    log_file_path = log_file or settings.logging.file_path
-    max_size = max_file_size or settings.logging.max_file_size
-    backups = backup_count or settings.logging.backup_count
-
     # Convert string level to logging constant
-    numeric_level = getattr(logging, log_level.upper(), logging.INFO)
-
-    # Create formatter
-    formatter = logging.Formatter(log_format)
-
-    # Get root logger
-    logger = logging.getLogger()
-    logger.setLevel(numeric_level)
-
-    # Remove existing handlers to avoid duplicates
-    for handler in logger.handlers[:]:
-        logger.removeHandler(handler)
-
+    numeric_level = getattr(logging, level.upper(), logging.INFO)
+    
+    # Root logger configuration
+    root_logger = logging.getLogger()
+    root_logger.setLevel(numeric_level)
+    
+    # Remove existing handlers
+    for handler in root_logger.handlers[:]:
+        root_logger.removeHandler(handler)
+    
     # Console handler
     console_handler = logging.StreamHandler(sys.stdout)
     console_handler.setLevel(numeric_level)
-    console_handler.setFormatter(formatter)
-    logger.addHandler(console_handler)
-
+    
+    if format_type.lower() == 'json':
+        console_formatter = JSONFormatter()
+    else:
+        console_formatter = ColoredFormatter()
+    
+    console_handler.setFormatter(console_formatter)
+    root_logger.addHandler(console_handler)
+    
     # File handler (if configured)
-    if log_file_path:
-        log_file_path.parent.mkdir(parents=True, exist_ok=True)
-
-        file_handler = logging.handlers.RotatingFileHandler(
-            log_file_path,
-            maxBytes=max_size,
-            backupCount=backups,
+    if log_file:
+        from logging.handlers import RotatingFileHandler
+        
+        log_path = Path(log_file)
+        log_path.parent.mkdir(parents=True, exist_ok=True)
+        
+        file_handler = RotatingFileHandler(
+            filename=log_file,
+            maxBytes=max_file_size,
+            backupCount=backup_count,
             encoding='utf-8'
         )
         file_handler.setLevel(numeric_level)
-        file_handler.setFormatter(formatter)
-        logger.addHandler(file_handler)
-
-    return logger
+        
+        # Always use JSON format for file logs
+        file_formatter = JSONFormatter()
+        file_handler.setFormatter(file_formatter)
+        root_logger.addHandler(file_handler)
+    
+    # Configure specific loggers
+    
+    # Suppress noisy third-party loggers
+    logging.getLogger('urllib3.connectionpool').setLevel(logging.WARNING)
+    logging.getLogger('sqlalchemy.engine').setLevel(logging.WARNING)
+    
+    # Set application loggers to debug if requested
+    if numeric_level <= logging.DEBUG:
+        logging.getLogger('app').setLevel(logging.DEBUG)
+        logging.getLogger('app.services').setLevel(logging.DEBUG)
+        logging.getLogger('app.api').setLevel(logging.DEBUG)
+    
+    logging.info(f"Logging configured: level={level}, format={format_type}")
 
 
 def get_logger(name: str) -> logging.Logger:
     """
-    Get a logger instance for a specific module or component.
-
-    This function returns a logger with the specified name, which will
-    inherit the configuration from the root logger set up by setup_logging().
-
+    Get a logger instance with the specified name.
+    
     Args:
-        name: Name of the logger (typically __name__ for the module).
-
+        name: Logger name (typically __name__)
+        
     Returns:
-        logging.Logger: A logger instance for the specified name.
+        Logger instance
     """
     return logging.getLogger(name)
 
 
-class LoggerMixin:
+def log_function_call(func):
     """
-    Mixin class that provides a logger property to classes.
-
-    Classes that inherit from this mixin will have a logger property
-    that returns a logger named after the class.
-    """
-
-    @property
-    def logger(self) -> logging.Logger:
-        """Get a logger instance for this class."""
-        return get_logger(self.__class__.__name__)
-
-
-def log_function_call(logger: logging.Logger, level: int = logging.DEBUG):
-    """
-    Decorator to log function calls.
-
-    This decorator can be used to automatically log when functions
-    are called and when they complete.
-
+    Decorator to automatically log function calls and returns.
+    
+    This decorator logs when a function is called, its arguments,
+    execution time, and return value or exception.
+    
     Args:
-        logger: Logger instance to use for logging.
-        level: Logging level for the messages.
-
+        func: Function to decorate
+        
     Returns:
-        Callable: The decorated function.
+        Decorated function
     """
-    def decorator(func):
-        def wrapper(*args, **kwargs):
-            logger.log(level, f"Calling {func.__name__} with args={args}, kwargs={kwargs}")
-            try:
-                result = func(*args, **kwargs)
-                logger.log(level, f"{func.__name__} completed successfully")
-                return result
-            except Exception as e:
-                logger.log(level, f"{func.__name__} failed with error: {e}")
-                raise
-        return wrapper
-    return decorator
-
-
-def log_execution_time(logger: logging.Logger, level: int = logging.DEBUG):
-    """
-    Decorator to log function execution time.
-
-    This decorator measures and logs the execution time of functions.
-
-    Args:
-        logger: Logger instance to use for logging.
-        level: Logging level for the timing messages.
-
-    Returns:
-        Callable: The decorated function.
-    """
+    import functools
     import time
+    
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        logger = get_logger(func.__module__)
+        func_name = f"{func.__module__}.{func.__name__}"
+        
+        # Log function call
+        logger.info(f"Calling {func_name}", extra={
+            'function_args': str(args)[:200],  # Limit length
+            'function_kwargs': str(kwargs)[:200]
+        })
+        
+        start_time = time.time()
+        
+        try:
+            # Execute function
+            result = func(*args, **kwargs)
+            
+            # Log successful execution
+            execution_time = time.time() - start_time
+            logger.info(f"Completed {func_name}", extra={
+                'execution_time_seconds': execution_time,
+                'result_type': type(result).__name__
+            })
+            
+            return result
+            
+        except Exception as e:
+            # Log exception
+            execution_time = time.time() - start_time
+            logger.error(f"Failed {func_name}", exc_info=True, extra={
+                'execution_time_seconds': execution_time,
+                'error_type': type(e).__name__,
+                'error_message': str(e)
+            })
+            
+            raise
+    
+    return wrapper
 
-    def decorator(func):
-        def wrapper(*args, **kwargs):
-            start_time = time.time()
-            try:
-                result = func(*args, **kwargs)
-                end_time = time.time()
-                execution_time = end_time - start_time
-                logger.log(level, f"{func.__name__} executed in {execution_time:.4f} seconds")
-                return result
-            except Exception as e:
-                end_time = time.time()
-                execution_time = end_time - start_time
-                logger.log(level, f"{func.__name__} failed after {execution_time:.4f} seconds with error: {e}")
-                raise
-        return wrapper
-    return decorator
+
+class LogContext:
+    """
+    Context manager for adding structured context to log records.
+    
+    This allows adding temporary context (like request ID, user ID, etc.)
+    to all log messages within a specific block of code.
+    """
+    
+    def __init__(self, logger: logging.Logger, **context):
+        """
+        Initialize log context.
+        
+        Args:
+            logger: Logger to add context to
+            **context: Key-value pairs to add to log records
+        """
+        self.logger = logger
+        self.context = context
+        self.adapter = None
+    
+    def __enter__(self):
+        """Enter context and create logger adapter."""
+        self.adapter = logging.LoggerAdapter(self.logger, self.context)
+        return self.adapter
+    
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        """Exit context and clean up."""
+        self.adapter = None
+
+
+def log_api_request(func: Callable) -> Callable:
+    """
+    Decorator to log API requests with request context.
+    
+    Args:
+        func: The Flask route function to decorate
+        
+    Returns:
+        Decorated function that logs request information
+    """
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        logger = get_logger(func.__module__)
+        
+        # Extract request information
+        request_info = {
+            'method': request.method if request else 'unknown',
+            'path': request.path if request else 'unknown',
+            'remote_addr': request.remote_addr if request else 'unknown',
+            'user_agent': str(request.user_agent) if request and hasattr(request, 'user_agent') else 'unknown',
+            'function': func.__name__,
+            'module': func.__module__
+        }
+        
+        # Add query parameters if available
+        if request and request.args:
+            request_info['query_params'] = dict(request.args)
+        
+        logger.info("API request", extra=request_info)
+        
+        return func(*args, **kwargs)
+    
+    return wrapper
+
+
+# Initialize logging with default configuration
+if not logging.getLogger().handlers:
+    setup_logging()

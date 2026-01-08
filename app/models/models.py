@@ -65,3 +65,88 @@ class PipelineRun(Base):
     started_at = Column(DateTime, default=datetime.utcnow)
     completed_at = Column(DateTime, nullable=True)
     logs = Column(Text)
+    
+    # New fields for custom fork support
+    git_repository_id = Column(Integer, ForeignKey("git_repositories.id"), nullable=True)
+    output_type = Column(String, default="docker_image", nullable=False)  # zip or docker_image
+    registry_id = Column(Integer, ForeignKey("container_registries.id"), nullable=True)
+    
+    # Relationships
+    git_repository = relationship("GitRepository", back_populates="pipeline_runs")
+    build_outputs = relationship("BuildOutput", back_populates="pipeline_run")
+    registry = relationship("ContainerRegistry")
+
+
+class Credential(Base):
+    """
+    Stores encrypted credentials for various services.
+    
+    All sensitive data is encrypted at rest using AES-256-GCM.
+    Credential data is never exposed in API responses.
+    """
+    __tablename__ = "credentials"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(255), unique=True, nullable=False, index=True)
+    credential_type = Column(String(50), nullable=False, index=True)
+    encrypted_data = Column(Text, nullable=False)  # JSON string with encrypted payload
+    encryption_key_id = Column(String(255), nullable=True)  # For key rotation tracking
+    metadata = Column(JSON, default={})  # Non-sensitive metadata
+    is_active = Column(Boolean, default=True, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    expires_at = Column(DateTime, nullable=True)  # Optional expiration
+    last_used_at = Column(DateTime, nullable=True)  # Track usage
+    
+    # Relationships
+    git_repositories = relationship("GitRepository", back_populates="credential")
+
+
+class GitRepository(Base):
+    """
+    Configured Git repositories for building custom forks.
+    
+    Supports both HTTPS and SSH protocols with optional credential binding.
+    """
+    __tablename__ = "git_repositories"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(255), unique=True, nullable=False, index=True)
+    repository_url = Column(String(1024), nullable=False)
+    repository_type = Column(String(20), nullable=False)  # 'https' or 'ssh'
+    default_branch = Column(String(255), default="main", nullable=False)
+    credential_id = Column(Integer, ForeignKey("credentials.id"), nullable=True)
+    is_verified = Column(Boolean, default=False, nullable=False)
+    verification_status = Column(String(50), default="pending", nullable=False)
+    verification_message = Column(Text, nullable=True)
+    is_experimental = Column(Boolean, default=True, nullable=False)  # Custom forks are experimental
+    metadata = Column(JSON, default={})
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    credential = relationship("Credential", back_populates="git_repositories")
+    pipeline_runs = relationship("PipelineRun", back_populates="git_repository")
+
+
+class BuildOutput(Base):
+    """
+    Tracks generated build artifacts (ZIP files and Docker images).
+    
+    Supports automatic cleanup of expired build outputs.
+    """
+    __tablename__ = "build_outputs"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    pipeline_run_id = Column(Integer, ForeignKey("pipeline_runs.id"), nullable=False)
+    output_type = Column(String(50), nullable=False)  # 'zip' or 'docker_image'
+    file_path = Column(String(1024), nullable=True)  # For ZIP files
+    image_url = Column(String(1024), nullable=True)  # For Docker images (optional)
+    file_size_bytes = Column(Integer, nullable=True)
+    checksum_sha256 = Column(String(64), nullable=True)
+    download_count = Column(Integer, default=0, nullable=False)
+    expires_at = Column(DateTime, nullable=True)  # For automatic cleanup
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    
+    # Relationships
+    pipeline_run = relationship("PipelineRun", back_populates="build_outputs")

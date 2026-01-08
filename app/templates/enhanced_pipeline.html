@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enhanced Pipeline - Open WebUI Customizer</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/enhanced-pipeline.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+</head>
+<body>
+    <div class="enhanced-pipeline-container">
+        <!-- Header -->
+        <header class="pipeline-header">
+            <h1>Enhanced Pipeline Builder</h1>
+            <p class="header-description">Build custom Open WebUI packages from official repository or custom forks</p>
+        </header>
+
+        <!-- Navigation -->
+        <nav class="pipeline-nav">
+            <a href="{{ url_for('dashboard') }}" class="nav-link">Dashboard</a>
+            <a href="{{ url_for('pipeline_page') }}" class="nav-link">Classic Pipeline</a>
+            <a href="{{ url_for('enhanced_pipeline') }}" class="nav-link active">Enhanced Pipeline</a>
+            <a href="{{ url_for('branding_page') }}" class="nav-link">Branding</a>
+            <a href="{{ url_for('configuration_page') }}" class="nav-link">Configuration</a>
+        </nav>
+
+        <!-- Create Pipeline Section -->
+        <section class="pipeline-section">
+            <h2>Create New Pipeline Run</h2>
+            
+            <form id="create-pipeline-form" class="create-pipeline-form">
+                <!-- Output Type Selection -->
+                <div class="form-group">
+                    <label for="output-type">Output Type *</label>
+                    <select id="output-type" name="output_type" required>
+                        <option value="zip">ZIP File</option>
+                        <option value="docker_image">Docker Image</option>
+                        <option value="both">Both ZIP and Docker Image</option>
+                    </select>
+                    <div class="form-help">Choose what type of build output to generate</div>
+                </div>
+
+                <!-- Git Repository Selection -->
+                <div class="form-group">
+                    <label for="git-repository">Git Repository (Optional)</label>
+                    <select id="git-repository" name="git_repository_id">
+                        <option value="">Use Official Repository</option>
+                    </select>
+                    <div class="form-help">Select a custom fork or leave empty to use the official repository</div>
+                </div>
+
+                <!-- Build Steps Selection -->
+                <div class="form-group full-width">
+                    <label>Build Steps *</label>
+                    <div id="build-steps-container">
+                        <!-- Build steps will be populated by JavaScript -->
+                    </div>
+                    <div class="form-help">Select the build steps to execute. Required steps are automatically selected.</div>
+                </div>
+
+                <!-- Container Registry (for Docker builds) -->
+                <div class="form-group" id="registry-group" style="display: none;">
+                    <label for="registry">Container Registry (Optional)</label>
+                    <select id="registry" name="registry_id">
+                        <option value="">Don't push to registry</option>
+                        <!-- Registry options will be populated by JavaScript -->
+                    </select>
+                    <div class="form-help">Select a registry to push Docker images to</div>
+                </div>
+
+                <!-- Form Actions -->
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">Create Pipeline Run</button>
+                    <button type="button" id="reset-form" class="btn btn-secondary">Reset</button>
+                </div>
+            </form>
+
+            <!-- Repository Information -->
+            <div id="repository-info">
+                <!-- Repository info will be displayed here when a repository is selected -->
+            </div>
+        </section>
+
+        <!-- Pipeline Runs Section -->
+        <section class="pipeline-section">
+            <div class="section-header">
+                <h2>Recent Pipeline Runs</h2>
+                <div class="section-actions">
+                    <button id="refresh-pipelines-btn" class="btn btn-secondary">
+                        <span class="loading" style="display: none;"></span>
+                        Refresh
+                    </button>
+                    <button id="cleanup-btn" class="btn btn-warning">Cleanup Old Runs</button>
+                </div>
+            </div>
+
+            <!-- Filter Controls -->
+            <div class="filter-controls">
+                <label for="status-filter">Filter by Status:</label>
+                <select id="status-filter">
+                    <option value="">All Statuses</option>
+                    <option value="pending">Pending</option>
+                    <option value="running">Running</option>
+                    <option value="completed">Completed</option>
+                    <option value="failed">Failed</option>
+                </select>
+                
+                <label for="limit-filter">Limit:</label>
+                <select id="limit-filter">
+                    <option value="10">10</option>
+                    <option value="25">25</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                </select>
+            </div>
+
+            <!-- Pipeline Runs Container -->
+            <div id="pipeline-runs-container">
+                <div class="loading-container">
+                    <div class="loading"></div>
+                    <p>Loading pipeline runs...</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Available Resources Section -->
+        <section class="pipeline-section">
+            <h2>Available Resources</h2>
+            
+            <div class="resources-grid">
+                <!-- Git Repositories -->
+                <div class="resource-card">
+                    <h3>Git Repositories</h3>
+                    <p>Manage custom Git repositories for building forks</p>
+                    <a href="/repositories" class="btn btn-secondary">Manage Repositories</a>
+                    <button id="add-repository-btn" class="btn btn-primary">Add Repository</button>
+                </div>
+
+                <!-- Credentials -->
+                <div class="resource-card">
+                    <h3>Credentials</h3>
+                    <p>Manage SSH keys and tokens for repository access</p>
+                    <a href="/credentials" class="btn btn-secondary">Manage Credentials</a>
+                    <button id="add-credential-btn" class="btn btn-primary">Add Credential</button>
+                </div>
+
+                <!-- Container Registries -->
+                <div class="resource-card">
+                    <h3>Container Registries</h3>
+                    <p>Configure Docker registries for pushing images</p>
+                    <a href="/registries" class="btn btn-secondary">Manage Registries</a>
+                    <button id="add-registry-btn" class="btn btn-primary">Add Registry</button>
+                </div>
+
+                <!-- Statistics -->
+                <div class="resource-card">
+                    <h3>Pipeline Statistics</h3>
+                    <p>View pipeline execution statistics and insights</p>
+                    <button id="view-statistics-btn" class="btn btn-secondary">View Statistics</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Help Section -->
+        <section class="pipeline-section">
+            <h2>Help & Documentation</h2>
+            
+            <div class="help-content">
+                <div class="help-item">
+                    <h3>🔧 Build Steps</h3>
+                    <ul>
+                        <li><strong>Clone Git Repository:</strong> Downloads the source code (required)</li>
+                        <li><strong>Apply Branding Template:</strong> Applies selected branding customizations</li>
+                        <li><strong>Apply Configuration:</strong> Applies environment and configuration settings</li>
+                        <li><strong>Create ZIP Archive:</strong> Packages the build into a downloadable ZIP file</li>
+                        <li><strong>Build Docker Image:</strong> Creates a Docker image from the source</li>
+                        <li><strong>Push to Registry:</strong> Uploads the Docker image to a container registry</li>
+                    </ul>
+                </div>
+
+                <div class="help-item">
+                    <h3>🔑 Authentication</h3>
+                    <p>For private repositories, you'll need to configure credentials:</p>
+                    <ul>
+                        <li><strong>SSH repositories:</strong> Add SSH key credentials</li>
+                        <li><strong>HTTPS repositories:</strong> Add username/token credentials</li>
+                        <li>Credentials are encrypted and stored securely</li>
+                    </ul>
+                </div>
+
+                <div class="help-item">
+                    <h3>📦 Output Types</h3>
+                    <ul>
+                        <li><strong>ZIP File:</strong> Downloadable archive ready for deployment</li>
+                        <li><strong>Docker Image:</strong> Container image for containerized deployment</li>
+                        <li><strong>Both:</strong> Generate both ZIP and Docker outputs</li>
+                    </ul>
+                </div>
+
+                <div class="help-item">
+                    <h3>🚀 Getting Started</h3>
+                    <ol>
+                        <li>Configure Git repositories (optional)</li>
+                        <li>Set up credentials for private repositories</li>
+                        <li>Select output type and build steps</li>
+                        <li>Execute the pipeline</li>
+                        <li>Download outputs or access images in registry</li>
+                    </ol>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Modals -->
+    <div id="statistics-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Pipeline Statistics</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="statistics-content">
+                    <!-- Statistics will be loaded here -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary modal-close">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="{{ url_for('static', filename='js/enhanced-pipeline.js') }}"></script>
+    
+    <script>
+        // Additional page-specific JavaScript
+        document.addEventListener('DOMContentLoaded', function() {
+            // Reset form button
+            document.getElementById('reset-form').addEventListener('click', function() {
+                document.getElementById('create-pipeline-form').reset();
+                document.getElementById('repository-info').innerHTML = '';
+                window.enhancedPipelineManager.updateStepSelection();
+            });
+
+            // Cleanup button
+            document.getElementById('cleanup-btn').addEventListener('click', async function() {
+                if (confirm('This will remove expired build outputs. Continue?')) {
+                    try {
+                        const response = await fetch('/api/pipelines/cleanup', {
+                            method: 'POST'
+                        });
+                        const result = await response.json();
+                        
+                        if (result.success) {
+                            window.enhancedPipelineManager.showSuccess('Cleanup completed successfully');
+                            console.log('Cleanup result:', result.cleanup_result);
+                        } else {
+                            window.enhancedPipelineManager.showError('Cleanup failed');
+                        }
+                    } catch (error) {
+                        console.error('Cleanup error:', error);
+                        window.enhancedPipelineManager.showError('Cleanup failed');
+                    }
+                }
+            });
+
+            // Statistics button
+            document.getElementById('view-statistics-btn').addEventListener('click', async function() {
+                try {
+                    const response = await fetch('/api/pipelines/statistics?days=30');
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        displayStatistics(result.statistics);
+                        document.getElementById('statistics-modal').style.display = 'flex';
+                    } else {
+                        window.enhancedPipelineManager.showError('Failed to load statistics');
+                    }
+                } catch (error) {
+                    console.error('Statistics error:', error);
+                    window.enhancedPipelineManager.showError('Failed to load statistics');
+                }
+            });
+
+            // Modal close handlers
+            document.querySelectorAll('.modal-close').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const modal = this.closest('.modal');
+                    if (modal) {
+                        modal.style.display = 'none';
+                    }
+                });
+            });
+
+            // Close modal on outside click
+            document.querySelectorAll('.modal').forEach(modal => {
+                modal.addEventListener('click', function(e) {
+                    if (e.target === modal) {
+                        modal.style.display = 'none';
+                    }
+                });
+            });
+        });
+
+        function displayStatistics(stats) {
+            const content = document.getElementById('statistics-content');
+            content.innerHTML = `
+                <div class="statistics-grid">
+                    <div class="stat-item">
+                        <h4>Total Runs</h4>
+                        <span class="stat-value">${stats.total_runs}</span>
+                    </div>
+                    <div class="stat-item">
+                        <h4>Success Rate</h4>
+                        <span class="stat-value">${stats.success_rate.toFixed(1)}%</span>
+                    </div>
+                    <div class="stat-item">
+                        <h4>Completed</h4>
+                        <span class="stat-value">${stats.completed_runs}</span>
+                    </div>
+                    <div class="stat-item">
+                        <h4>Failed</h4>
+                        <span class="stat-value">${stats.failed_runs}</span>
+                    </div>
+                </div>
+                
+                <h4>Output Types Used</h4>
+                <div class="output-types">
+                    ${Object.entries(stats.output_types).map(([type, count]) => 
+                        `<span class="output-type">${type}: ${count}</span>`
+                    ).join('')}
+                </div>
+                
+                <h4>Build Steps Usage</h4>
+                <div class="step-usage">
+                    ${Object.entries(stats.step_usage).map(([step, count]) => 
+                        `<span class="step-usage-item">${step}: ${count}</span>`
+                    ).join('')}
+                </div>
+                
+                <p class="statistics-note">Statistics for the last ${stats.period_days} days</p>
+            `;
+        }
+    </script>
+
+    <style>
+        /* Additional page-specific styles */
+        .pipeline-header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 8px;
+        }
+
+        .pipeline-header h1 {
+            margin: 0 0 10px 0;
+            font-size: 2.5rem;
+            font-weight: 300;
+        }
+
+        .header-description {
+            margin: 0;
+            opacity: 0.9;
+            font-size: 1.1rem;
+        }
+
+        .pipeline-nav {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 30px;
+            background: white;
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .nav-link {
+            padding: 10px 20px;
+            margin: 0 5px;
+            text-decoration: none;
+            color: #495057;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+        }
+
+        .nav-link:hover,
+        .nav-link.active {
+            background-color: #007bff;
+            color: white;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .section-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .filter-controls {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: white;
+            border-radius: 4px;
+        }
+
+        .filter-controls label {
+            font-weight: 500;
+            color: #495057;
+        }
+
+        .filter-controls select {
+            padding: 5px 10px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+        }
+
+        .loading-container {
+            text-align: center;
+            padding: 40px;
+            color: #6c757d;
+        }
+
+        .loading-container .loading {
+            margin: 0 auto 15px auto;
+        }
+
+        .resources-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .resource-card {
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .resource-card h3 {
+            margin-top: 0;
+            color: #495057;
+        }
+
+        .resource-card p {
+            color: #6c757d;
+            margin-bottom: 20px;
+        }
+
+        .help-content {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .help-item h3 {
+            color: #495057;
+            margin-bottom: 10px;
+        }
+
+        .help-item ul,
+        .help-item ol {
+            margin: 0;
+            padding-left: 20px;
+        }
+
+        .help-item li {
+            margin-bottom: 8px;
+            color: #6c757d;
+        }
+
+        .help-item strong {
+            color: #495057;
+        }
+
+        .form-group.full-width {
+            grid-column: 1 / -1;
+        }
+
+        .form-actions {
+            grid-column: 1 / -1;
+            display: flex;
+            gap: 10px;
+        }
+
+        .statistics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-item {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stat-item h4 {
+            margin: 0 0 10px 0;
+            color: #6c757d;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .stat-value {
+            display: block;
+            font-size: 2rem;
+            font-weight: 600;
+            color: #007bff;
+        }
+
+        .output-types,
+        .step-usage {
+            margin: 20px 0;
+        }
+
+        .output-type,
+        .step-usage-item {
+            display: inline-block;
+            background: #e9ecef;
+            padding: 5px 10px;
+            margin: 2px;
+            border-radius: 15px;
+            font-size: 13px;
+        }
+
+        .statistics-note {
+            margin-top: 20px;
+            color: #6c757d;
+            font-style: italic;
+            text-align: center;
+        }
+
+        @media (max-width: 768px) {
+            .pipeline-nav {
+                flex-wrap: wrap;
+            }
+            
+            .nav-link {
+                margin: 2px;
+                font-size: 14px;
+            }
+            
+            .section-header {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .section-actions {
+                justify-content: center;
+            }
+            
+            .filter-controls {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+        }
+    </style>
+</body>
+</html>
