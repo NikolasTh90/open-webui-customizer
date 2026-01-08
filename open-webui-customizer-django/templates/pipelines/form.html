@@ -1,0 +1,234 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }} - Open WebUI Customizer{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="card-title mb-0">
+                    <i class="fas fa-cogs me-2"></i>{{ title }}
+                </h4>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+
+                    <div class="row">
+                        <!-- Git Repository Field -->
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.git_repository.id_for_label }}" class="form-label">
+                                {{ form.git_repository.label }}
+                                <span class="text-danger">*</span>
+                            </label>
+                            {{ form.git_repository }}
+                            {% if form.git_repository.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.git_repository.errors.0 }}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">{{ form.git_repository.help_text }}</div>
+                        </div>
+
+                        <!-- Registry Field -->
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.registry.id_for_label }}" class="form-label">
+                                {{ form.registry.label }}
+                                <span class="text-danger">*</span>
+                            </label>
+                            {{ form.registry }}
+                            {% if form.registry.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.registry.errors.0 }}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">{{ form.registry.help_text }}</div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <!-- Output Type Field -->
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.output_type.id_for_label }}" class="form-label">
+                                {{ form.output_type.label }}
+                                <span class="text-danger">*</span>
+                            </label>
+                            {{ form.output_type }}
+                            {% if form.output_type.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.output_type.errors.0 }}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">{{ form.output_type.help_text }}</div>
+                        </div>
+
+                        <!-- Branch Field -->
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.branch.id_for_label }}" class="form-label">
+                                {{ form.branch.label }}
+                                <span class="text-danger">*</span>
+                            </label>
+                            {{ form.branch }}
+                            {% if form.branch.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.branch.errors.0 }}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">{{ form.branch.help_text }}</div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <!-- Image Tag Field -->
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.image_tag.id_for_label }}" class="form-label">
+                                {{ form.image_tag.label }}
+                                <span class="text-danger">*</span>
+                            </label>
+                            {{ form.image_tag }}
+                            {% if form.image_tag.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.image_tag.errors.0 }}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">{{ form.image_tag.help_text }}</div>
+                        </div>
+
+                        <!-- Branding Template ID Field -->
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.branding_template_id.id_for_label }}" class="form-label">
+                                {{ form.branding_template_id.label }}
+                            </label>
+                            {{ form.branding_template_id }}
+                            {% if form.branding_template_id.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.branding_template_id.errors.0 }}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">{{ form.branding_template_id.help_text }}</div>
+                        </div>
+                    </div>
+
+                    <!-- Steps to Execute Field -->
+                    <div class="mb-3">
+                        <label for="{{ form.steps_to_execute.id_for_label }}" class="form-label">
+                            {{ form.steps_to_execute.label }}
+                            <span class="text-danger">*</span>
+                        </label>
+                        {{ form.steps_to_execute }}
+                        {% if form.steps_to_execute.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.steps_to_execute.errors.0 }}
+                            </div>
+                        {% endif %}
+                        <div class="form-text">{{ form.steps_to_execute.help_text }}</div>
+                    </div>
+
+                    <div class="row">
+                        <!-- Build Arguments Field -->
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.build_arguments.id_for_label }}" class="form-label">
+                                {{ form.build_arguments.label }}
+                            </label>
+                            {{ form.build_arguments }}
+                            {% if form.build_arguments.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.build_arguments.errors.0 }}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">{{ form.build_arguments.help_text }}</div>
+                        </div>
+
+                        <!-- Environment Variables Field -->
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.environment_variables.id_for_label }}" class="form-label">
+                                {{ form.environment_variables.label }}
+                            </label>
+                            {{ form.environment_variables }}
+                            {% if form.environment_variables.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.environment_variables.errors.0 }}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">{{ form.environment_variables.help_text }}</div>
+                        </div>
+                    </div>
+
+                    <!-- Metadata Field -->
+                    <div class="mb-3">
+                        <label for="{{ form.metadata.id_for_label }}" class="form-label">
+                            {{ form.metadata.label }}
+                        </label>
+                        {{ form.metadata }}
+                        {% if form.metadata.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.metadata.errors.0 }}
+                            </div>
+                        {% endif %}
+                        <div class="form-text">{{ form.metadata.help_text }}</div>
+                    </div>
+
+                    <!-- Form Actions -->
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'pipelines:list' %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-play me-2"></i>{{ submit_text }}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Pipeline Information -->
+        <div class="alert alert-info mt-3">
+            <i class="fas fa-info-circle me-2"></i>
+            <strong>Pipeline Execution:</strong> Once started, the pipeline will execute the selected steps in order.
+            You can monitor progress and cancel running pipelines from the pipeline list.
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// Form validation for JSON fields
+document.querySelector('form').addEventListener('submit', function(e) {
+    const jsonFields = ['{{ form.build_arguments.id_for_label }}', '{{ form.environment_variables.id_for_label }}', '{{ form.metadata.id_for_label }}'];
+
+    for (const fieldId of jsonFields) {
+        const field = document.getElementById(fieldId);
+        if (field && field.value.trim()) {
+            try {
+                JSON.parse(field.value);
+                field.setCustomValidity('');
+            } catch (error) {
+                field.setCustomValidity('This field must contain valid JSON');
+                e.preventDefault();
+                return false;
+            }
+        }
+    }
+});
+
+// Format JSON on blur for better readability
+['{{ form.build_arguments.id_for_label }}', '{{ form.environment_variables.id_for_label }}', '{{ form.metadata.id_for_label }}'].forEach(function(fieldId) {
+    const field = document.getElementById(fieldId);
+    if (field) {
+        field.addEventListener('blur', function() {
+            if (this.value.trim()) {
+                try {
+                    const parsed = JSON.parse(this.value);
+                    this.value = JSON.stringify(parsed, null, 2);
+                } catch (error) {
+                    // Invalid JSON, leave as-is
+                }
+            }
+        });
+    }
+});
+</script>
+{% endblock %}
