@@ -1,0 +1,255 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }} - Open WebUI Customizer{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="card-title mb-0">
+                    <i class="fas fa-server me-2"></i>{{ title }}
+                </h4>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+
+                    <!-- Basic Information -->
+                    <div class="row mb-4">
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.name.id_for_label }}" class="form-label">
+                                <i class="fas fa-tag me-1"></i>{{ form.name.label }}
+                                <span class="text-danger">*</span>
+                            </label>
+                            {{ form.name }}
+                            {% if form.name.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.name.errors.0 }}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">{{ form.name.help_text }}</div>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.registry_type.id_for_label }}" class="form-label">
+                                <i class="fas fa-cubes me-1"></i>{{ form.registry_type.label }}
+                                <span class="text-danger">*</span>
+                            </label>
+                            {{ form.registry_type }}
+                            {% if form.registry_type.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.registry_type.errors.0 }}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">{{ form.registry_type.help_text }}</div>
+                        </div>
+                    </div>
+
+                    <!-- Registry URL (for generic registries) -->
+                    <div class="row mb-4" id="registry-url-row" style="display: none;">
+                        <div class="col-12">
+                            <label for="{{ form.registry_url.id_for_label }}" class="form-label">
+                                <i class="fas fa-globe me-1"></i>{{ form.registry_url.label }}
+                                <span class="text-danger" id="registry-url-required">*</span>
+                            </label>
+                            {{ form.registry_url }}
+                            {% if form.registry_url.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.registry_url.errors.0 }}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">{{ form.registry_url.help_text }}</div>
+                        </div>
+                    </div>
+
+                    <!-- AWS ECR Specific Fields -->
+                    <div id="aws-fields" class="row mb-4" style="display: none;">
+                        <div class="col-12">
+                            <div class="card border-warning">
+                                <div class="card-header bg-warning text-dark">
+                                    <i class="fab fa-aws me-2"></i>AWS ECR Configuration
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-4 mb-3">
+                                            <label for="{{ form.aws_account_id.id_for_label }}" class="form-label">
+                                                {{ form.aws_account_id.label }}
+                                                <span class="text-danger">*</span>
+                                            </label>
+                                            {{ form.aws_account_id }}
+                                            {% if form.aws_account_id.errors %}
+                                                <div class="invalid-feedback d-block">
+                                                    {{ form.aws_account_id.errors.0 }}
+                                                </div>
+                                            {% endif %}
+                                            <div class="form-text">{{ form.aws_account_id.help_text }}</div>
+                                        </div>
+
+                                        <div class="col-md-4 mb-3">
+                                            <label for="{{ form.aws_region.id_for_label }}" class="form-label">
+                                                {{ form.aws_region.label }}
+                                                <span class="text-danger">*</span>
+                                            </label>
+                                            {{ form.aws_region }}
+                                            {% if form.aws_region.errors %}
+                                                <div class="invalid-feedback d-block">
+                                                    {{ form.aws_region.errors.0 }}
+                                                </div>
+                                            {% endif %}
+                                            <div class="form-text">{{ form.aws_region.help_text }}</div>
+                                        </div>
+
+                                        <div class="col-md-4 mb-3">
+                                            <label for="{{ form.repository_name.id_for_label }}" class="form-label">
+                                                {{ form.repository_name.label }}
+                                                <span class="text-danger">*</span>
+                                            </label>
+                                            {{ form.repository_name }}
+                                            {% if form.repository_name.errors %}
+                                                <div class="invalid-feedback d-block">
+                                                    {{ form.repository_name.errors.0 }}
+                                                </div>
+                                            {% endif %}
+                                            <div class="form-text">{{ form.repository_name.help_text }}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Authentication -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <label for="{{ form.credential.id_for_label }}" class="form-label">
+                                <i class="fas fa-key me-1"></i>{{ form.credential.label }}
+                            </label>
+                            {{ form.credential }}
+                            {% if form.credential.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.credential.errors.0 }}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">{{ form.credential.help_text }}</div>
+                        </div>
+                    </div>
+
+                    <!-- Metadata -->
+                    <div class="mb-4">
+                        <label for="{{ form.metadata.id_for_label }}" class="form-label">
+                            <i class="fas fa-code me-1"></i>{{ form.metadata.label }}
+                        </label>
+                        {{ form.metadata }}
+                        {% if form.metadata.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.metadata.errors.0 }}
+                            </div>
+                        {% endif %}
+                        <div class="form-text">{{ form.metadata.help_text }}</div>
+                    </div>
+
+                    <!-- Form Actions -->
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'registries:list' %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-2"></i>{{ submit_text }}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Registry Information -->
+        <div class="alert alert-info mt-3">
+            <i class="fas fa-info-circle me-2"></i>
+            <strong>Registry Setup:</strong> Configure your container registry to store and distribute custom Open WebUI builds.
+            Choose the appropriate registry type and provide the necessary authentication credentials.
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// Toggle registry-specific fields based on registry type
+function toggleRegistryFields() {
+    const registryType = document.getElementById('{{ form.registry_type.id_for_label }}');
+    const registryUrlRow = document.getElementById('registry-url-row');
+    const registryUrlRequired = document.getElementById('registry-url-required');
+    const awsFields = document.getElementById('aws-fields');
+
+    if (registryType.value === 'generic') {
+        // Show registry URL for generic registries
+        registryUrlRow.style.display = 'block';
+        registryUrlRequired.style.display = 'inline';
+        awsFields.style.display = 'none';
+    } else if (registryType.value === 'aws_ecr') {
+        // Show AWS fields for ECR
+        registryUrlRow.style.display = 'none';
+        registryUrlRequired.style.display = 'none';
+        awsFields.style.display = 'block';
+    } else {
+        // Hide all conditional fields for other registry types
+        registryUrlRow.style.display = 'none';
+        registryUrlRequired.style.display = 'none';
+        awsFields.style.display = 'none';
+    }
+}
+
+// Form validation for JSON fields
+document.querySelector('form').addEventListener('submit', function(e) {
+    const metadataField = document.getElementById('{{ form.metadata.id_for_label }}');
+    if (metadataField && metadataField.value.trim()) {
+        try {
+            JSON.parse(metadataField.value);
+            metadataField.setCustomValidity('');
+        } catch (error) {
+            metadataField.setCustomValidity('Metadata must be valid JSON\nExample: {"key": "value"}');
+            e.preventDefault();
+            return false;
+        }
+    }
+});
+
+// Format JSON on blur for better readability
+['{{ form.metadata.id_for_label }}'].forEach(function(fieldId) {
+    const field = document.getElementById(fieldId);
+    if (field) {
+        field.addEventListener('blur', function() {
+            if (this.value.trim()) {
+                try {
+                    const parsed = JSON.parse(this.value);
+                    this.value = JSON.stringify(parsed, null, 2);
+                } catch (error) {
+                    // Invalid JSON, show helpful message
+                    if (this.value.includes('{') || this.value.includes('"')) {
+                        this.setCustomValidity('Invalid JSON. Example: {"key": "value"}');
+                        this.reportValidity();
+                    }
+                }
+            }
+        });
+
+        // Add input event to clear validation on typing
+        field.addEventListener('input', function() {
+            this.setCustomValidity('');
+        });
+    }
+});
+
+// Initialize form state on page load
+document.addEventListener('DOMContentLoaded', function() {
+    toggleRegistryFields();
+
+    // Add tooltips for better UX
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+});
+</script>
+{% endblock %}

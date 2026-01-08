@@ -111,11 +111,12 @@ class DashboardView(TemplateView):
         ).order_by('-created_at')[:5]
 
         for pipeline in recent_pipelines:
+            registry_name = pipeline.registry.name if pipeline.registry else 'Local'
             activities.append({
                 'type': 'pipeline',
                 'icon': 'fa-cogs',
                 'title': f'Pipeline {pipeline.get_status_display()}',
-                'description': f'{pipeline.git_repository.name} → {pipeline.registry.name}',
+                'description': f'{pipeline.git_repository.name} → {registry_name}',
                 'timestamp': pipeline.created_at,
                 'status': pipeline.status,
                 'url': f'/pipelines/{pipeline.id}/'

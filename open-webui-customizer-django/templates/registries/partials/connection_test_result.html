@@ -1,0 +1,15 @@
+{% if test_results %}
+<div class="alert {% if test_results.status_class == 'success' %}alert-success{% elif test_results.status_class == 'error' %}alert-danger{% else %}alert-info{% endif %}">
+    <strong>Test Result:</strong> {{ test_results.details }}
+    {% if test_results.error %}
+        <br><small class="text-muted">Error: {{ test_results.error }}</small>
+    {% endif %}
+</div>
+{% else %}
+<div class="alert alert-info">
+    <strong>Testing connection...</strong>
+    <div class="spinner-border spinner-border-sm ms-2" role="status">
+        <span class="visually-hidden">Loading...</span>
+    </div>
+</div>
+{% endif %}
