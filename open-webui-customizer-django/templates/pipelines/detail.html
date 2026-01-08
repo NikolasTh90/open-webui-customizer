@@ -366,3 +366,27 @@
 <script>
 // Auto-refresh pipeline details every 5 seconds if running
 function refreshPipeline() {
+    if ('{{ pipeline.is_running }}' === 'True') {
+        // Refresh the status section
+        htmx.ajax('GET', window.location.pathname, {
+            target: '#pipeline-status',
+            swap: 'innerHTML'
+        });
+
+        // Refresh logs if available
+        const logsCard = document.querySelector('.card:has(pre)');
+        if (logsCard) {
+            htmx.ajax('GET', window.location.pathname, {
+                target: logsCard,
+                swap: 'innerHTML'
+            });
+        }
+    }
+}
+
+// Set up auto-refresh for running pipelines
+if ('{{ pipeline.is_running }}' === 'True') {
+    setInterval(refreshPipeline, 5000);
+}
+</script>
+{% endblock %}
