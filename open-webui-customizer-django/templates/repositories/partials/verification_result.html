@@ -1,0 +1,39 @@
+<div class="alert alert-{{ status_class }} mt-3">
+    <i class="fas fa-{% if is_verified %}check-circle{% else %}exclamation-triangle{% endif %} me-2"></i>
+    <strong>{% if is_verified %}Verification Successful{% else %}Verification Failed{% endif %}</strong><br>
+    {{ message }}
+</div>
+
+{% if is_verified %}
+<script>
+// Update the verification status badge in the main content
+const statusBadge = document.querySelector('.badge');
+if (statusBadge) {
+    statusBadge.className = 'badge bg-success';
+    statusBadge.innerHTML = '<i class="fas fa-check me-1"></i>Verified';
+}
+
+// Update the verification alert
+const verificationAlert = document.querySelector('.alert');
+if (verificationAlert) {
+    verificationAlert.className = 'alert alert-success';
+    verificationAlert.innerHTML = '<i class="fas fa-check-circle me-2"></i><strong>Verified</strong><br>Repository access confirmed';
+}
+</script>
+{% else %}
+<script>
+// Update the verification status badge in the main content
+const statusBadge = document.querySelector('.badge');
+if (statusBadge && statusBadge.textContent.includes('Verified')) {
+    statusBadge.className = 'badge bg-warning';
+    statusBadge.innerHTML = '<i class="fas fa-exclamation-triangle me-1"></i>Failed';
+}
+
+// Update the verification alert
+const verificationAlert = document.querySelector('.alert');
+if (verificationAlert) {
+    verificationAlert.className = 'alert alert-warning';
+    verificationAlert.innerHTML = '<i class="fas fa-exclamation-triangle me-2"></i><strong>Not Verified</strong><br>Repository access needs verification';
+}
+</script>
+{% endif %}

@@ -1,0 +1,5 @@
+<div class="alert alert-{{ status_class }} mt-3">
+    <i class="fas fa-{% if status_class == 'success' %}check-circle{% else %}exclamation-triangle{% endif %} me-2"></i>
+    <strong>{% if status_class == 'success' %}Sync Successful{% else %}Sync Failed{% endif %}</strong><br>
+    {{ message }}
+</div>

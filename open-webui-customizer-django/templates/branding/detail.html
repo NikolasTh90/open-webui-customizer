@@ -1,0 +1,161 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ template.name }} - Branding Template - Open WebUI Customizer{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1 class="h3 mb-0">{{ template.name }}</h1>
+            <div class="btn-group">
+                <a href="{% url 'branding:update' template.pk %}" class="btn btn-outline-primary">
+                    <i class="fas fa-edit me-2"></i>Edit
+                </a>
+                {% if not template.is_default %}
+                <button class="btn btn-outline-success"
+                        hx-post="{% url 'branding:set_default' template.pk %}"
+                        hx-confirm="Make this the default branding template?"
+                        hx-target="body"
+                        hx-swap="innerHTML">
+                    <i class="fas fa-star me-2"></i>Set Default
+                </button>
+                {% endif %}
+                <a href="{% url 'branding:list' %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>Back to List
+                </a>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Template Details -->
+            <div class="col-lg-8">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-info-circle me-2"></i>Template Details
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <table class="table table-borderless">
+                            <tr>
+                                <th width="30%">Name:</th>
+                                <td>{{ template.name }}</td>
+                            </tr>
+                            <tr>
+                                <th>Brand Name:</th>
+                                <td>{{ template.brand_name }}</td>
+                            </tr>
+                            <tr>
+                                <th>Description:</th>
+                                <td>{{ template.description|default:"No description provided" }}</td>
+                            </tr>
+                            <tr>
+                                <th>Status:</th>
+                                <td>
+                                    {% if template.is_default %}
+                                    <span class="badge bg-primary">Default Template</span>
+                                    {% else %}
+                                    <span class="badge bg-secondary">Active Template</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>Assets Count:</th>
+                                <td>{{ template.assets.count }}</td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Replacement Rules -->
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-code me-2"></i>Replacement Rules
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        {% if template.replacement_rules %}
+                        <pre class="bg-light p-3 rounded"><code>{{ template.replacement_rules|pprint }}</code></pre>
+                        {% else %}
+                        <p class="text-muted">No replacement rules defined.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Assets -->
+            <div class="col-lg-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-file me-2"></i>Assets
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        {% with assets=template.assets.all %}
+                        {% if assets %}
+                        <div class="list-group list-group-flush">
+                            {% for asset in assets %}
+                            <div class="list-group-item d-flex justify-content-between align-items-center px-0">
+                                <div>
+                                    <h6 class="mb-1">{{ asset.file_name }}</h6>
+                                    <small class="text-muted">{{ asset.get_file_type_display }}</small>
+                                </div>
+                                {% if asset.is_image %}
+                                <img src="{{ asset.file_url }}" alt="{{ asset.file_name }}" class="img-thumbnail" style="max-width: 50px; max-height: 50px;">
+                                {% else %}
+                                <i class="fas fa-file text-muted"></i>
+                                {% endif %}
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <p class="text-muted">No assets uploaded.</p>
+                        {% endif %}
+                        {% endwith %}
+                    </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-tools me-2"></i>Actions
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-grid gap-2">
+                            <a href="{% url 'branding:update' template.pk %}" class="btn btn-outline-primary">
+                                <i class="fas fa-edit me-2"></i>Edit Template
+                            </a>
+                            <button class="btn btn-outline-info" hx-get="{% url 'branding:duplicate' template.pk %}" hx-target="body" hx-swap="innerHTML">
+                                <i class="fas fa-copy me-2"></i>Duplicate
+                            </button>
+                            {% if not template.is_default %}
+                            <button class="btn btn-outline-success"
+                                    hx-post="{% url 'branding:set_default' template.pk %}"
+                                    hx-confirm="Make this the default branding template?"
+                                    hx-target="body"
+                                    hx-swap="innerHTML">
+                                <i class="fas fa-star me-2"></i>Set as Default
+                            </button>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// HTMX configuration for this page
+document.addEventListener('DOMContentLoaded', function() {
+    // Add any page-specific JavaScript here
+});
+</script>
+{% endblock %}

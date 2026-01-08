@@ -56,7 +56,7 @@ class GitRepositoryListView(ListView):
         branding_template = BrandingTemplate.objects.filter(is_default=True).first()
         context['branding_template'] = branding_template
         if branding_template:
-            context['logo_asset'] = branding_template.brandingasset_set.filter(
+            context['logo_asset'] = branding_template.assets.filter(
                 file_type='logo',
                 is_active=True
             ).first()
@@ -76,6 +76,33 @@ class GitRepositoryDetailView(DetailView):
     def get_queryset(self):
         return GitRepository.objects.filter(is_active=True)
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        repository = self.object
+
+        # Add pipeline statistics
+        context['total_pipelines'] = repository.pipeline_runs.count()
+        context['successful_pipelines'] = repository.pipeline_runs.filter(status='completed').count()
+        context['failed_pipelines'] = repository.pipeline_runs.filter(status='failed').count()
+        context['running_pipelines'] = repository.pipeline_runs.filter(status='running').count()
+
+        # Add CSRF token for HTMX requests
+        from django.middleware.csrf import get_token
+        context['csrf_token'] = get_token(self.request)
+
+        # Add branding context
+        branding_template = BrandingTemplate.objects.filter(is_default=True).first()
+        context['branding_template'] = branding_template
+        if branding_template:
+            context['logo_asset'] = branding_template.assets.filter(
+                file_type='logo',
+                is_active=True
+            ).first()
+        else:
+            context['logo_asset'] = None
+
+        return context
+
 
 class GitRepositoryCreateView(CreateView):
     """Create view for new Git repositories."""
@@ -94,7 +121,7 @@ class GitRepositoryCreateView(CreateView):
         branding_template = BrandingTemplate.objects.filter(is_default=True).first()
         context['branding_template'] = branding_template
         if branding_template:
-            context['logo_asset'] = branding_template.brandingasset_set.filter(
+            context['logo_asset'] = branding_template.assets.filter(
                 file_type='logo',
                 is_active=True
             ).first()
@@ -151,24 +178,101 @@ def repository_verify(request, pk):
     repository = get_object_or_404(GitRepository, pk=pk, is_active=True)
 
     try:
-        # This would implement actual repository verification
-        # For now, we'll simulate verification
-        verification_success = True
-        message = "Repository verification successful"
+        import requests
+        from urllib.parse import urlparse
+
+        # Simple verification: check if repository URL is accessible
+        repo_url = repository.repository_url.strip()
+
+        if not repo_url:
+            raise ValueError("Repository URL is empty")
+
+        # Parse URL to determine repository type and construct API URL
+        parsed_url = urlparse(repo_url)
+
+        if 'github.com' in parsed_url.netloc:
+            # GitHub repository - construct API URL properly
+            path_parts = parsed_url.path.strip('/').split('/')
+            if len(path_parts) >= 2:
+                owner, repo = path_parts[0], path_parts[1]
+                # Remove .git extension if present
+                repo = repo.replace('.git', '')
+                api_url = f"https://api.github.com/repos/{owner}/{repo}"
+                headers = {'Accept': 'application/vnd.github.v3+json'}
+                response = requests.get(api_url, headers=headers, timeout=10)
+            else:
+                raise ValueError("Invalid GitHub repository URL format")
+
+            if response.status_code == 200:
+                repo_data = response.json()
+                verification_success = True
+                message = f"Repository verified successfully. Latest update: {repo_data.get('updated_at', 'Unknown')}"
+
+                # Update repository with verification status
+                repository.is_verified = True
+                repository.verification_status = VerificationStatus.VERIFIED
+                repository.last_commit_date = timezone.now()
+                repository.save()
+            elif response.status_code == 404:
+                raise ValueError("Repository not found on GitHub - check the repository name and owner")
+            elif response.status_code == 403:
+                raise ValueError("GitHub API rate limit exceeded or repository is private")
+            else:
+                raise ValueError(f"GitHub API error: {response.status_code} - {response.text[:100]}")
+
+        elif 'gitlab.com' in parsed_url.netloc:
+            # GitLab repository
+            api_url = repo_url.replace('gitlab.com', 'gitlab.com/api/v4/projects').replace('.git', '')
+            response = requests.get(api_url, timeout=10)
+
+            if response.status_code == 200:
+                verification_success = True
+                message = "GitLab repository verified successfully"
+                repository.is_verified = True
+                repository.verification_status = VerificationStatus.VERIFIED
+                repository.last_commit_date = timezone.now()
+                repository.save()
+            else:
+                raise ValueError(f"GitLab API returned status {response.status_code}")
+
+        else:
+            # Generic Git repository - just check if URL is reachable
+            try:
+                response = requests.head(repo_url, timeout=10, allow_redirects=True)
+                if response.status_code in [200, 301, 302, 307, 308]:
+                    verification_success = True
+                    message = "Repository URL is accessible"
+                    repository.is_verified = True
+                    repository.verification_status = VerificationStatus.VERIFIED
+                    repository.last_commit_date = timezone.now()
+                    repository.save()
+                else:
+                    raise ValueError(f"Repository URL returned HTTP {response.status_code}")
+            except requests.exceptions.RequestException as e:
+                raise ValueError(f"Cannot access repository URL: {str(e)}")
+
         status_class = "success"
 
-        # Update repository with verification results
-        repository.is_verified = verification_success
-        repository.verification_status = VerificationStatus.VERIFIED
-        repository.commit_hash = "abc123def456"
-        repository.last_commit_date = timezone.now()
+    except requests.exceptions.Timeout:
+        verification_success = False
+        message = "Repository verification timed out - check network connectivity"
+        status_class = "warning"
+        repository.is_verified = False
+        repository.verification_status = VerificationStatus.FAILED
+        repository.save()
+
+    except requests.exceptions.ConnectionError:
+        verification_success = False
+        message = "Cannot connect to repository - check URL and network connectivity"
+        status_class = "danger"
+        repository.is_verified = False
+        repository.verification_status = VerificationStatus.FAILED
         repository.save()
 
     except Exception as e:
         verification_success = False
         message = f"Repository verification failed: {str(e)}"
         status_class = "danger"
-
         repository.is_verified = False
         repository.verification_status = VerificationStatus.FAILED
         repository.save()

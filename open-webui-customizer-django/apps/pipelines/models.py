@@ -44,10 +44,8 @@ class PipelineStatus(models.TextChoices):
 class OutputType(models.TextChoices):
     """Enumeration of pipeline output types."""
     
-    DOCKER_IMAGE = 'docker_image', _('Docker Image')
     ZIP_FILE = 'zip', _('ZIP File')
-    TARBALL = 'tarball', _('Tarball')
-    DIRECTORY = 'directory', _('Directory')
+    DOCKER_IMAGE = 'docker_image', _('Docker Image')
 
 
 class BuildStatus(models.TextChoices):
@@ -70,9 +68,9 @@ def get_build_output_path(instance, filename):
     """
     Generate storage path for build output files.
     """
-    if instance.output_type in [OutputType.ZIP_FILE, OutputType.TARBALL]:
+    if instance.output_type == OutputType.ZIP_FILE:
         safe_filename = f"build_output_{instance.pk}_{uuid.uuid4().hex[:8]}"
-        extension = 'zip' if instance.output_type == OutputType.ZIP_FILE else 'tar.gz'
+        extension = 'zip'
         return f"build_outputs/{instance.pipeline_run.pk}/{safe_filename}.{extension}"
     return filename
 
@@ -155,9 +153,9 @@ class PipelineRun(TimestampedMetadataModel):
     output_type = models.CharField(
         max_length=20,
         choices=OutputType.choices,
-        default=OutputType.DOCKER_IMAGE,
+        default=OutputType.ZIP_FILE,
         verbose_name="Output Type",
-        help_text="Type of build output to generate"
+        help_text="Type of build output to generate (ZIP is prioritized for simplicity)"
     )
     registry = models.ForeignKey(
         ContainerRegistry,
@@ -166,13 +164,13 @@ class PipelineRun(TimestampedMetadataModel):
         blank=True,
         related_name='pipeline_runs',
         verbose_name="Container Registry",
-        help_text="Registry to push Docker images to"
+        help_text="Registry to push Docker images to (only required for Docker Image output)"
     )
     image_tag = models.CharField(
         max_length=100,
         blank=True,
         verbose_name="Image Tag",
-        help_text="Custom tag for Docker images"
+        help_text="Custom tag for Docker images (only required for Docker Image output)"
     )
     
     # Execution tracking
@@ -636,8 +634,6 @@ class BuildOutput(TimestampedExpirableModel):
         
         if self.output_type == OutputType.ZIP_FILE:
             return f"custom_webui_build_{pipeline_id}_{timestamp}.zip"
-        elif self.output_type == OutputType.TARBALL:
-            return f"custom_webui_build_{pipeline_id}_{timestamp}.tar.gz"
         else:
             return f"custom_webui_build_{pipeline_id}_{timestamp}"
     

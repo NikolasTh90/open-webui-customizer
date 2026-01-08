@@ -224,7 +224,7 @@ class BrandingAssetTest(TestCase):
         asset = BrandingAssetFactory(template=template)
         
         self.assertEqual(asset.template, template)
-        self.assertIn(asset, template.brandingasset_set.all())
+        self.assertIn(asset, template.assets.all())
 
 
 class BrandingAssetManagerTest(TestCase):

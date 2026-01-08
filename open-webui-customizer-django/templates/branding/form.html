@@ -1,0 +1,209 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }} - Open WebUI Customizer{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="card-title mb-0">
+                    <i class="fas fa-palette me-2"></i>{{ title }}
+                </h4>
+            </div>
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+
+                    <div class="row">
+                        <!-- Name Field -->
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.name.id_for_label }}" class="form-label">
+                                {{ form.name.label }}
+                                <span class="text-danger">*</span>
+                            </label>
+                            {{ form.name }}
+                            {% if form.name.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.name.errors.0 }}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">{{ form.name.help_text }}</div>
+                        </div>
+
+                        <!-- Brand Name Field -->
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.brand_name.id_for_label }}" class="form-label">
+                                {{ form.brand_name.label }}
+                                <span class="text-danger">*</span>
+                            </label>
+                            {{ form.brand_name }}
+                            {% if form.brand_name.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.brand_name.errors.0 }}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">{{ form.brand_name.help_text }}</div>
+                        </div>
+                    </div>
+
+                    <!-- Description Field -->
+                    <div class="mb-3">
+                        <label for="{{ form.description.id_for_label }}" class="form-label">
+                            {{ form.description.label }}
+                        </label>
+                        {{ form.description }}
+                        {% if form.description.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.description.errors.0 }}
+                            </div>
+                        {% endif %}
+                        <div class="form-text">{{ form.description.help_text }}</div>
+                    </div>
+
+                    <!-- Replacement Rules Field -->
+                    <div class="mb-3">
+                        <label for="{{ form.replacement_rules.id_for_label }}" class="form-label">
+                            {{ form.replacement_rules.label }}
+                        </label>
+                        {{ form.replacement_rules }}
+                        {% if form.replacement_rules.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.replacement_rules.errors.0 }}
+                            </div>
+                        {% endif %}
+                        <div class="form-text">{{ form.replacement_rules.help_text }}</div>
+                    </div>
+
+                    <!-- Logo Field -->
+                    <div class="mb-3">
+                        <label for="{{ form.logo.id_for_label }}" class="form-label">
+                            {{ form.logo.label }}
+                        </label>
+                        {% if current_logo %}
+                            <div class="mb-2">
+                                <small class="text-muted">Current logo:</small><br>
+                                <img src="{{ current_logo.file.url }}" alt="Current logo" class="img-thumbnail" style="max-height: 100px;">
+                            </div>
+                        {% endif %}
+                        {{ form.logo }}
+                        {% if form.logo.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.logo.errors.0 }}
+                            </div>
+                        {% endif %}
+                        <div class="form-text">{{ form.logo.help_text }}</div>
+                    </div>
+
+                    <!-- Is Default Field -->
+                    <div class="mb-3">
+                        <div class="form-check">
+                            {{ form.is_default }}
+                            <label class="form-check-label" for="{{ form.is_default.id_for_label }}">
+                                {{ form.is_default.label }}
+                            </label>
+                        </div>
+                        {% if form.is_default.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.is_default.errors.0 }}
+                            </div>
+                        {% endif %}
+                        <div class="form-text">{{ form.is_default.help_text }}</div>
+                    </div>
+
+                    <!-- Form Actions -->
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'branding:list' %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-2"></i>{{ submit_text }}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Branding Information -->
+        <div class="alert alert-info mt-3">
+            <i class="fas fa-info-circle me-2"></i>
+            <strong>Branding Templates:</strong> Create templates to customize the appearance and text 
+            elements of Open WebUI. Replacement rules allow you to replace default text with custom values.
+        </div>
+
+        <!-- Example JSON for Replacement Rules -->
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-code me-2"></i>Example Replacement Rules
+                </h6>
+            </div>
+            <div class="card-body">
+                <pre class="bg-light p-3 rounded"><code>{
+  "Open WebUI": "Your Project Name",
+  "open-webui": "your-project-name",
+  "WebUI": "Your Project",
+  "Welcome to Open WebUI": "Welcome to Your Project Name",
+  "Chat with AI": "Chat with Your Assistant",
+  "Settings": "Configuration"
+}</code></pre>
+                <p class="mb-0 text-muted">
+                    <small>The replacement rules should be valid JSON where keys are the original text to find 
+                    and values are the replacement text.</small>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// Form validation for JSON fields
+document.querySelector('form').addEventListener('submit', function(e) {
+    const replacementRulesField = document.getElementById('{{ form.replacement_rules.id_for_label }}');
+    
+    if (replacementRulesField && replacementRulesField.value.trim()) {
+        try {
+            JSON.parse(replacementRulesField.value);
+            replacementRulesField.setCustomValidity('');
+        } catch (error) {
+            replacementRulesField.setCustomValidity('Replacement rules must contain valid JSON');
+            e.preventDefault();
+            return false;
+        }
+    }
+});
+
+// Format JSON on blur for better readability
+const replacementRulesField = document.getElementById('{{ form.replacement_rules.id_for_label }}');
+if (replacementRulesField) {
+    replacementRulesField.addEventListener('blur', function() {
+        if (this.value.trim()) {
+            try {
+                const parsed = JSON.parse(this.value);
+                this.value = JSON.stringify(parsed, null, 2);
+            } catch (error) {
+                // Invalid JSON, leave as-is
+            }
+        }
+    });
+}
+
+// Auto-format example on field focus
+if (replacementRulesField) {
+    replacementRulesField.addEventListener('focus', function() {
+        if (!this.value.trim()) {
+            this.value = JSON.stringify({
+                "Open WebUI": "Your Project Name",
+                "open-webui": "your-project-name",
+                "WebUI": "Your Project",
+                "Welcome to Open WebUI": "Welcome to Your Project Name",
+                "Chat with AI": "Chat with Your Assistant"
+            }, null, 2);
+        }
+    });
+}
+</script>
+{% endblock %}

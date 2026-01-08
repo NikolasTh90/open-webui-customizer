@@ -14,6 +14,14 @@ class BrandingTemplateForm(forms.ModelForm):
     """
     Form for creating and updating branding templates.
     """
+    logo = forms.ImageField(
+        required=False,
+        widget=forms.ClearableFileInput(attrs={
+            'class': 'form-control',
+            'accept': 'image/*'
+        }),
+        help_text="Upload a logo image to replace the Open WebUI logo"
+    )
 
     class Meta:
         model = BrandingTemplate
@@ -58,16 +66,19 @@ class BrandingTemplateForm(forms.ModelForm):
     def clean_replacement_rules(self):
         """Validate replacement rules JSON."""
         replacement_rules = self.cleaned_data.get('replacement_rules')
-        if replacement_rules:
-            try:
-                import json
-                parsed = json.loads(replacement_rules)
-                if not isinstance(parsed, dict):
-                    raise forms.ValidationError("Replacement rules must be a valid JSON object")
-                return parsed
-            except json.JSONDecodeError:
-                raise forms.ValidationError("Replacement rules must be valid JSON")
-        return {}
+        if replacement_rules is None:
+            return {}
+        if isinstance(replacement_rules, dict):
+            return replacement_rules
+        # Fallback for string input
+        try:
+            import json
+            parsed = json.loads(replacement_rules)
+            if not isinstance(parsed, dict):
+                raise forms.ValidationError("Replacement rules must be a valid JSON object")
+            return parsed
+        except (json.JSONDecodeError, TypeError):
+            raise forms.ValidationError("Replacement rules must be valid JSON")
 
 
 class BrandingAssetForm(forms.ModelForm):

@@ -1,0 +1,368 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Pipeline #{{ pipeline.pk }} - Open WebUI Customizer{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h1 class="h2 mb-0">
+                    <i class="fas fa-cogs me-2"></i>Pipeline Run #{{ pipeline.pk }}
+                </h1>
+                <p class="text-muted mb-0">
+                    {{ pipeline.git_repository.name }} ({{ pipeline.branch }})
+                    {% if pipeline.registry %}→ {{ pipeline.registry.name }}{% endif %}
+                </p>
+            </div>
+            <div>
+                <a href="{% url 'pipelines:list' %}" class="btn btn-outline-secondary me-2">
+                    <i class="fas fa-arrow-left me-2"></i>Back to Pipelines
+                </a>
+                {% if pipeline.can_be_cancelled %}
+                <button class="btn btn-outline-warning"
+                        hx-post="{% url 'pipelines:cancel' pipeline.pk %}"
+                        hx-confirm="Are you sure you want to cancel this pipeline?"
+                        hx-target="#pipeline-status"
+                        hx-swap="innerHTML">
+                    <i class="fas fa-stop me-2"></i>Cancel Pipeline
+                </button>
+                {% elif pipeline.status == 'failed' %}
+                <button class="btn btn-outline-success"
+                        hx-post="{% url 'pipelines:retry' pipeline.pk %}"
+                        hx-redirect="{% url 'pipelines:detail' pipeline.pk %}">
+                    <i class="fas fa-redo me-2"></i>Retry Pipeline
+                </button>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Status Overview -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-info-circle me-2"></i>Pipeline Status
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="text-center">
+                            {% if pipeline.status == 'running' %}
+                                <div class="status-icon running">
+                                    <i class="fas fa-play fa-3x text-primary"></i>
+                                </div>
+                            {% elif pipeline.status == 'completed' %}
+                                <div class="status-icon completed">
+                                    <i class="fas fa-check fa-3x text-success"></i>
+                                </div>
+                            {% elif pipeline.status == 'failed' %}
+                                <div class="status-icon failed">
+                                    <i class="fas fa-times fa-3x text-danger"></i>
+                                </div>
+                            {% else %}
+                                <div class="status-icon pending">
+                                    <i class="fas fa-clock fa-3x text-secondary"></i>
+                                </div>
+                            {% endif %}
+                            <h4 class="mt-2" id="pipeline-status">
+                                {% if pipeline.status == 'running' %}
+                                    <span class="badge bg-primary fs-6">
+                                        <i class="fas fa-play me-1"></i>{{ pipeline.get_status_display }}
+                                    </span>
+                                {% elif pipeline.status == 'completed' %}
+                                    <span class="badge bg-success fs-6">
+                                        <i class="fas fa-check me-1"></i>{{ pipeline.get_status_display }}
+                                    </span>
+                                {% elif pipeline.status == 'failed' %}
+                                    <span class="badge bg-danger fs-6">
+                                        <i class="fas fa-times me-1"></i>{{ pipeline.get_status_display }}
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-secondary fs-6">
+                                        <i class="fas fa-clock me-1"></i>{{ pipeline.get_status_display }}
+                                    </span>
+                                {% endif %}
+                            </h4>
+                        </div>
+                    </div>
+                    <div class="col-md-9">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <dl class="row">
+                                    <dt class="col-sm-4">Created:</dt>
+                                    <dd class="col-sm-8">{{ pipeline.created_at|date:"M j, Y g:i A" }}</dd>
+
+                                    <dt class="col-sm-4">Started:</dt>
+                                    <dd class="col-sm-8">
+                                        {% if pipeline.started_at %}
+                                            {{ pipeline.started_at|date:"M j, Y g:i A" }}
+                                        {% else %}
+                                            <span class="text-muted">Not started</span>
+                                        {% endif %}
+                                    </dd>
+
+                                    <dt class="col-sm-4">Completed:</dt>
+                                    <dd class="col-sm-8">
+                                        {% if pipeline.completed_at %}
+                                            {{ pipeline.completed_at|date:"M j, Y g:i A" }}
+                                        {% else %}
+                                            <span class="text-muted">Not completed</span>
+                                        {% endif %}
+                                    </dd>
+                                </dl>
+                            </div>
+                            <div class="col-md-6">
+                                <dl class="row">
+                                    <dt class="col-sm-4">Duration:</dt>
+                                    <dd class="col-sm-8">
+                                        {% if pipeline.get_execution_duration %}
+                                            {{ pipeline.get_execution_duration }}
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </dd>
+
+                                    <dt class="col-sm-4">Progress:</dt>
+                                    <dd class="col-sm-8">
+                                        {% if pipeline.status == 'running' %}
+                                        <div class="progress">
+                                            <div class="progress-bar" role="progressbar"
+                                                 style="width: {{ pipeline.progress_percentage|default:0 }}%"
+                                                 aria-valuenow="{{ pipeline.progress_percentage|default:0 }}"
+                                                 aria-valuemin="0" aria-valuemax="100">
+                                                {{ pipeline.progress_percentage|default:0 }}%
+                                            </div>
+                                        </div>
+                                        {% else %}
+                                            <span class="text-muted">{{ pipeline.progress_percentage|default:0 }}%</span>
+                                        {% endif %}
+                                    </dd>
+
+                                    <dt class="col-sm-4">Current Step:</dt>
+                                    <dd class="col-sm-8">
+                                        {% if pipeline.current_step %}
+                                            {{ pipeline.current_step }}
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </dd>
+                                </dl>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Pipeline Details -->
+<div class="row">
+    <div class="col-lg-8">
+        <!-- Source Configuration -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-code-branch me-2"></i>Source Configuration
+                </h5>
+            </div>
+            <div class="card-body">
+                <dl class="row">
+                    <dt class="col-sm-3">Repository:</dt>
+                    <dd class="col-sm-9">
+                        <a href="{% url 'repositories:detail' pipeline.git_repository.pk %}">
+                            {{ pipeline.git_repository.name }}
+                        </a>
+                        <br><small class="text-muted">{{ pipeline.git_repository.repository_url }}</small>
+                    </dd>
+
+                    <dt class="col-sm-3">Branch:</dt>
+                    <dd class="col-sm-9">{{ pipeline.branch }}</dd>
+
+                    <dt class="col-sm-3">Commit:</dt>
+                    <dd class="col-sm-9">
+                        {% if pipeline.commit_hash %}
+                            <code>{{ pipeline.commit_hash|truncatechars:8 }}</code>
+                        {% else %}
+                            <span class="text-muted">Latest</span>
+                        {% endif %}
+                    </dd>
+                </dl>
+            </div>
+        </div>
+
+        <!-- Output Configuration -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-box me-2"></i>Output Configuration
+                </h5>
+            </div>
+            <div class="card-body">
+                <dl class="row">
+                    <dt class="col-sm-3">Output Type:</dt>
+                    <dd class="col-sm-9">{{ pipeline.get_output_type_display }}</dd>
+
+                    {% if pipeline.registry %}
+                    <dt class="col-sm-3">Registry:</dt>
+                    <dd class="col-sm-9">
+                        <a href="{% url 'registries:detail' pipeline.registry.pk %}">
+                            {{ pipeline.registry.name }}
+                        </a>
+                    </dd>
+                    {% endif %}
+
+                    {% if pipeline.image_tag %}
+                    <dt class="col-sm-3">Image Tag:</dt>
+                    <dd class="col-sm-9"><code>{{ pipeline.image_tag }}</code></dd>
+                    {% endif %}
+                </dl>
+            </div>
+        </div>
+
+        <!-- Build Outputs -->
+        {% if pipeline.build_outputs.exists %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-file-archive me-2"></i>Build Outputs
+                </h5>
+            </div>
+            <div class="card-body">
+                {% for output in pipeline.build_outputs.all %}
+                <div class="d-flex justify-content-between align-items-center border-bottom py-2">
+                    <div>
+                        <strong>{{ output.get_output_type_display }}</strong>
+                        {% if output.file %}
+                            <br><small class="text-muted">{{ output.file.name }}</small>
+                        {% elif output.image_url %}
+                            <br><small class="text-muted">{{ output.image_url }}</small>
+                        {% endif %}
+                    </div>
+                    <div class="text-end">
+                        {% if output.is_available %}
+                            <span class="badge bg-success">Available</span>
+                            {% if output.can_be_downloaded %}
+                            <a href="{{ output.get_file_url }}" class="btn btn-sm btn-outline-primary ms-2">
+                                <i class="fas fa-download"></i>
+                            </a>
+                            {% endif %}
+                        {% else %}
+                            <span class="badge bg-secondary">{{ output.get_status_display }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Execution Logs -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-terminal me-2"></i>Execution Logs
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if pipeline.logs %}
+                <pre class="bg-light p-3 rounded" style="font-size: 0.875rem; max-height: 400px; overflow-y: auto;">{{ pipeline.logs }}</pre>
+                {% else %}
+                <p class="text-muted mb-0">No logs available yet.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <!-- Execution Details -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-cog me-2"></i>Execution Details
+                </h5>
+            </div>
+            <div class="card-body">
+                <dl class="row">
+                    <dt class="col-sm-5">Worker ID:</dt>
+                    <dd class="col-sm-7">
+                        {% if pipeline.worker_id %}
+                            <code>{{ pipeline.worker_id }}</code>
+                        {% else %}
+                            <span class="text-muted">-</span>
+                        {% endif %}
+                    </dd>
+
+                    {% if pipeline.branding_template_id %}
+                    <dt class="col-sm-5">Branding:</dt>
+                    <dd class="col-sm-7">Template #{{ pipeline.branding_template_id }}</dd>
+                    {% endif %}
+                </dl>
+
+                {% if pipeline.error_message %}
+                <div class="alert alert-danger mt-3">
+                    <strong>Error:</strong> {{ pipeline.error_message }}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Build Arguments -->
+        {% if pipeline.build_arguments %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-wrench me-2"></i>Build Arguments
+                </h5>
+            </div>
+            <div class="card-body">
+                <pre class="bg-light p-2 rounded small">{{ pipeline.build_arguments|safe }}</pre>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Environment Variables -->
+        {% if pipeline.environment_variables %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-key me-2"></i>Environment Variables
+                </h5>
+            </div>
+            <div class="card-body">
+                <pre class="bg-light p-2 rounded small">{{ pipeline.environment_variables|safe }}</pre>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Pipeline Steps -->
+        {% if pipeline.steps_to_execute %}
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-list-check me-2"></i>Pipeline Steps
+                </h5>
+            </div>
+            <div class="card-body">
+                <ul class="list-group list-group-flush">
+                    {% for step in pipeline.steps_to_execute %}
+                    <li class="list-group-item">{{ step }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// Auto-refresh pipeline details every 5 seconds if running
+function refreshPipeline() {

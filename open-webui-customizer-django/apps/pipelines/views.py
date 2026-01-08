@@ -63,7 +63,7 @@ class PipelineRunCreateView(CreateView):
         return context
 
     def form_valid(self, form):
-        messages.success(self.request, f'Pipeline "{form.instance.name}" started successfully.')
+        messages.success(self.request, f'Pipeline "{form.instance.git_repository.name}" started successfully.')
         return super().form_valid(form)
 
 
@@ -80,7 +80,7 @@ def pipeline_cancel(request, pk):
     pipeline.error_message = 'Pipeline cancelled by user'
     pipeline.save()
 
-    messages.success(request, f'Pipeline "{pipeline.name}" cancelled successfully.')
+    messages.success(request, f'Pipeline "{pipeline.git_repository.name}" cancelled successfully.')
     return redirect('pipelines:detail', pk=pk)
 
 
@@ -113,5 +113,5 @@ def pipeline_retry(request, pk):
 
     new_pipeline = PipelineRun.objects.create(**new_pipeline_data)
 
-    messages.success(request, f'Pipeline retry "{new_pipeline.name}" started successfully.')
+    messages.success(request, f'Pipeline retry "{new_pipeline.git_repository.name}" started successfully.')
     return redirect('pipelines:detail', pk=new_pipeline.pk)

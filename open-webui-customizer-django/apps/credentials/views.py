@@ -50,7 +50,7 @@ class CredentialListView(ListView):
         branding_template = BrandingTemplate.objects.filter(is_default=True).first()
         context['branding_template'] = branding_template
         if branding_template:
-            context['logo_asset'] = branding_template.brandingasset_set.filter(
+            context['logo_asset'] = branding_template.assets.filter(
                 file_type='logo',
                 is_active=True
             ).first()
@@ -88,7 +88,7 @@ class CredentialCreateView(CreateView):
         branding_template = BrandingTemplate.objects.filter(is_default=True).first()
         context['branding_template'] = branding_template
         if branding_template:
-            context['logo_asset'] = branding_template.brandingasset_set.filter(
+            context['logo_asset'] = branding_template.assets.filter(
                 file_type='logo',
                 is_active=True
             ).first()
@@ -128,7 +128,7 @@ class CredentialUpdateView(UpdateView):
         branding_template = BrandingTemplate.objects.filter(is_default=True).first()
         context['branding_template'] = branding_template
         if branding_template:
-            context['logo_asset'] = branding_template.brandingasset_set.filter(
+            context['logo_asset'] = branding_template.assets.filter(
                 file_type='logo',
                 is_active=True
             ).first()

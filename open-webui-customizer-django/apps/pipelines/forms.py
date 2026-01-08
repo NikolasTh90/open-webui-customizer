@@ -19,53 +19,64 @@ class PipelineRunForm(forms.ModelForm):
     Handles pipeline configuration and validation.
     """
 
+    branding_template_id = forms.ModelChoiceField(
+        queryset=BrandingTemplate.objects.none(),  # Will be set in __init__
+        required=False,
+        empty_label="No branding (default Open WebUI)",
+        widget=forms.Select(attrs={
+            'class': 'form-select'
+        }),
+        label="Branding Template",
+        help_text="Optional: Choose a branding template to apply custom logos, colors, and styling"
+    )
+
     class Meta:
         model = PipelineRun
         fields = [
-            'git_repository', 'registry', 'output_type', 'branch',
+            'git_repository', 'output_type', 'branch', 'registry',
             'image_tag', 'branding_template_id', 'build_arguments',
-            'environment_variables', 'steps_to_execute', 'metadata'
+            'environment_variables', 'metadata'
         ]
         widgets = {
             'git_repository': forms.Select(attrs={
-                'class': 'form-select'
-            }),
-            'registry': forms.Select(attrs={
-                'class': 'form-select'
+                'class': 'form-select',
+                'onchange': 'updateRepositoryInfo()'
             }),
             'output_type': forms.Select(attrs={
-                'class': 'form-select'
+                'class': 'form-select',
+                'onchange': 'toggleOutputFields()'
             }),
             'branch': forms.TextInput(attrs={
                 'class': 'form-control',
-                'placeholder': 'main'
+                'placeholder': 'main',
+                'pattern': '[a-zA-Z0-9/_-]+',
+                'title': 'Branch names can only contain letters, numbers, underscores, hyphens, and forward slashes'
+            }),
+            'registry': forms.Select(attrs={
+                'class': 'form-select',
+                'id': 'registry-field'
             }),
             'image_tag': forms.TextInput(attrs={
                 'class': 'form-control',
-                'placeholder': 'latest'
-            }),
-            'branding_template_id': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'Optional branding template ID'
+                'placeholder': 'latest',
+                'pattern': '[a-zA-Z0-9._-]+',
+                'title': 'Image tags can only contain letters, numbers, dots, underscores, and hyphens',
+                'id': 'image-tag-field'
             }),
             'build_arguments': forms.Textarea(attrs={
                 'class': 'form-control',
                 'rows': 3,
-                'placeholder': 'Build arguments as JSON'
+                'placeholder': '{"BUILDKIT_INLINE_CACHE": "1", "NODE_ENV": "production"}'
             }),
             'environment_variables': forms.Textarea(attrs={
                 'class': 'form-control',
                 'rows': 3,
-                'placeholder': 'Environment variables as JSON'
-            }),
-            'steps_to_execute': forms.SelectMultiple(attrs={
-                'class': 'form-select',
-                'size': 4
+                'placeholder': '{"API_URL": "https://api.example.com", "DEBUG": "false"}'
             }),
             'metadata': forms.Textarea(attrs={
                 'class': 'form-control',
                 'rows': 3,
-                'placeholder': 'Optional metadata as JSON'
+                'placeholder': '{"description": "Custom Open WebUI build", "version": "1.0.0"}'
             }),
         }
 
@@ -81,14 +92,24 @@ class PipelineRunForm(forms.ModelForm):
             is_active=True
         ).order_by('name')
 
-        # Set choices for steps
-        self.fields['steps_to_execute'].choices = [
-            ('clone', 'Clone Repository'),
-            ('build', 'Build Application'),
-            ('brand', 'Apply Branding'),
-            ('push', 'Push to Registry'),
-            ('test', 'Run Tests'),
-        ]
+        # Set up branding template dropdown
+        branding_templates = BrandingTemplate.objects.filter(is_active=True).order_by('-is_default', 'name')
+        if not branding_templates.exists():
+            # If no templates exist, create a default option that explains the situation
+            self.fields['branding_template_id'].queryset = BrandingTemplate.objects.none()
+            self.fields['branding_template_id'].empty_label = "No branding templates available - create one first"
+        else:
+            self.fields['branding_template_id'].queryset = branding_templates
+            self.fields['branding_template_id'].empty_label = "No branding (default Open WebUI)"
+        self.fields['branding_template_id'].required = False
+
+    def clean_branding_template_id(self):
+        """Convert the selected BrandingTemplate instance to its ID."""
+        template = self.cleaned_data.get('branding_template_id')
+        if template:
+            return template.pk
+        return None
+
 
     def clean_build_arguments(self):
         """Validate build arguments JSON."""
@@ -112,6 +133,7 @@ class PipelineRunForm(forms.ModelForm):
                 raise forms.ValidationError("Environment variables must be valid JSON")
         return data or '{}'
 
+
     def clean_metadata(self):
         """Validate metadata JSON."""
         data = self.cleaned_data.get('metadata')
@@ -122,3 +144,51 @@ class PipelineRunForm(forms.ModelForm):
             except json.JSONDecodeError:
                 raise forms.ValidationError("Metadata must be valid JSON")
         return data or '{}'
+
+    def clean(self):
+        """Validate form dependencies between fields."""
+        cleaned_data = super().clean()
+        output_type = cleaned_data.get('output_type')
+        registry = cleaned_data.get('registry')
+        image_tag = cleaned_data.get('image_tag')
+
+        # Validate Docker-specific requirements
+        if output_type == OutputType.DOCKER_IMAGE:
+            # For Docker images, registry and image tag are strongly recommended
+            # but not strictly required (can build locally)
+            if not registry and not image_tag:
+                # Add a warning but don't prevent submission
+                self.add_warning(
+                    "Building Docker image without registry and tag. "
+                    "The image will only be available locally and won't be pushed to any registry.",
+                    code='docker_build_local'
+                )
+
+        # Validate ZIP output restrictions
+        elif output_type == OutputType.ZIP_FILE:
+            # Remove registry and image_tag for ZIP output as they're not needed
+            cleaned_data['registry'] = None
+            cleaned_data['image_tag'] = ''
+
+        return cleaned_data
+
+    def add_warning(self, message, code=None):
+        """Add a warning message to the form."""
+        if not hasattr(self, '_warnings'):
+            self._warnings = []
+        
+        # Create a warning similar to ValidationError but for warnings
+        from django.core.exceptions import ValidationError
+        try:
+            # Try to use ValidationError for warning display
+            raise ValidationError(message, code=code)
+        except ValidationError as e:
+            self._warnings.append(str(e))
+
+    def has_warnings(self):
+        """Check if the form has any warnings."""
+        return hasattr(self, '_warnings') and len(self._warnings) > 0
+
+    def get_warnings(self):
+        """Get all warning messages."""
+        return getattr(self, '_warnings', [])

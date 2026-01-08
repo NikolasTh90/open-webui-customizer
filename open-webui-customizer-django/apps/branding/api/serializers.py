@@ -51,7 +51,7 @@ class BrandingTemplateSerializer(serializers.ModelSerializer):
     Handles serialization of branding templates with assets and configuration.
     """
 
-    assets = BrandingAssetSerializer(many=True, read_only=True, source='brandingasset_set')
+    assets = BrandingAssetSerializer(many=True, read_only=True, source='assets')
     assets_count = serializers.SerializerMethodField()
     is_default_display = serializers.CharField(
         source='get_is_default_display',
@@ -71,7 +71,7 @@ class BrandingTemplateSerializer(serializers.ModelSerializer):
 
     def get_assets_count(self, obj):
         """Get count of associated assets."""
-        return obj.brandingasset_set.count()
+        return obj.assets.count()
 
 
 class BrandingTemplateCreateSerializer(serializers.ModelSerializer):

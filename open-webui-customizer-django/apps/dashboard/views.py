@@ -34,7 +34,7 @@ class DashboardView(TemplateView):
 
         # Get logo asset if branding template exists
         if branding_template:
-            context['logo_asset'] = branding_template.brandingasset_set.filter(
+            context['logo_asset'] = branding_template.assets.filter(
                 file_type='logo',
                 is_active=True
             ).first()
@@ -232,7 +232,7 @@ def api_root(request):
 
     # Get logo asset if branding template exists
     if branding_template:
-        context['logo_asset'] = branding_template.brandingasset_set.filter(
+        context['logo_asset'] = branding_template.assets.filter(
             file_type='logo',
             is_active=True
         ).first()

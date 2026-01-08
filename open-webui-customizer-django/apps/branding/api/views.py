@@ -96,7 +96,7 @@ class BrandingTemplateViewSet(viewsets.ModelViewSet):
 
         # Get assets info
         assets = []
-        for asset in template.brandingasset_set.all():
+        for asset in template.assets.all():
             assets.append({
                 'id': asset.id,
                 'file_name': asset.file_name,
@@ -138,7 +138,7 @@ class BrandingTemplateViewSet(viewsets.ModelViewSet):
             new_template = serializer.save()
 
             # Copy assets (this would need file copying logic in production)
-            for asset in template.brandingasset_set.all():
+            for asset in template.assets.all():
                 BrandingAsset.objects.create(
                     file_name=f"{asset.file_name.rsplit('.', 1)[0]}_copy.{asset.file_name.rsplit('.', 1)[1]}",
                     file_type=asset.file_type,

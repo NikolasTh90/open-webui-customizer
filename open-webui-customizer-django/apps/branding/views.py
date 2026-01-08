@@ -32,7 +32,7 @@ class BrandingTemplateListView(ListView):
         branding_template = BrandingTemplate.objects.filter(is_default=True).first()
         context['branding_template'] = branding_template
         if branding_template:
-            context['logo_asset'] = branding_template.brandingasset_set.filter(
+            context['logo_asset'] = branding_template.assets.filter(
                 file_type='logo',
                 is_active=True
             ).first()
@@ -68,8 +68,22 @@ class BrandingTemplateCreateView(CreateView):
         return context
 
     def form_valid(self, form):
+        # Save the template first
+        response = super().form_valid(form)
+
+        # Handle logo upload
+        logo_file = form.cleaned_data.get('logo')
+        if logo_file:
+            BrandingAsset.objects.create(
+                template=form.instance,
+                file_name=logo_file.name,
+                file_type='logo',
+                file=logo_file,
+                description='Logo uploaded during template creation'
+            )
+
         messages.success(self.request, f'Branding template "{form.instance.name}" created successfully.')
-        return super().form_valid(form)
+        return response
 
 
 class BrandingTemplateUpdateView(UpdateView):
@@ -87,11 +101,47 @@ class BrandingTemplateUpdateView(UpdateView):
         context = super().get_context_data(**kwargs)
         context['title'] = 'Update Branding Template'
         context['submit_text'] = 'Update Template'
+
+        # Add current logo asset if exists
+        context['current_logo'] = BrandingAsset.objects.filter(
+            template=self.object,
+            file_type='logo',
+            is_active=True
+        ).first()
+
         return context
 
     def form_valid(self, form):
+        # Save the template first
+        response = super().form_valid(form)
+
+        # Handle logo upload
+        logo_file = form.cleaned_data.get('logo')
+        if logo_file:
+            # Check if there's an existing logo asset
+            existing_logo = BrandingAsset.objects.filter(
+                template=form.instance,
+                file_type='logo',
+                is_active=True
+            ).first()
+
+            if existing_logo:
+                # Update existing logo
+                existing_logo.file = logo_file
+                existing_logo.file_name = logo_file.name
+                existing_logo.save()
+            else:
+                # Create new logo asset
+                BrandingAsset.objects.create(
+                    template=form.instance,
+                    file_name=logo_file.name,
+                    file_type='logo',
+                    file=logo_file,
+                    description='Logo uploaded during template update'
+                )
+
         messages.success(self.request, f'Branding template "{self.object.name}" updated successfully.')
-        return super().form_valid(form)
+        return response
 
 
 def branding_template_delete(request, pk):
@@ -128,27 +178,20 @@ def duplicate_template(request, pk):
     new_template_data = {
         'name': f"{template.name} (Copy)",
         'description': template.description,
-        'primary_color': template.primary_color,
-        'secondary_color': template.secondary_color,
-        'accent_color': template.accent_color,
-        'background_color': template.background_color,
-        'text_color': template.text_color,
-        'custom_css': template.custom_css,
-        'css_variables': template.css_variables.copy() if template.css_variables else {},
-        'metadata': template.metadata.copy() if template.metadata else {}
+        'brand_name': template.brand_name,
+        'replacement_rules': template.replacement_rules.copy() if template.replacement_rules else {},
     }
 
     new_template = BrandingTemplate.objects.create(**new_template_data)
 
-    # Copy assets (would need file copying in production)
-    for asset in template.brandingasset_set.all():
+    # Copy assets (simplified - just create reference, actual file copying would be needed in production)
+    for asset in template.assets.all():
         BrandingAsset.objects.create(
             file_name=f"{asset.file_name.rsplit('.', 1)[0]}_copy.{asset.file_name.rsplit('.', 1)[1]}",
             file_type=asset.file_type,
-            file_size=asset.file_size,
-            description=asset.description,
+            description=f"Copy of {asset.description}" if asset.description else "",
             template=new_template,
-            metadata=asset.metadata.copy() if asset.metadata else {}
+            # Note: In production, would need to copy the actual file
         )
 
     messages.success(request, f'Branding template "{new_template.name}" created as duplicate.')

@@ -16,11 +16,35 @@
                 <form method="post">
                     {% csrf_token %}
 
-                    <div class="row">
-                        <!-- Git Repository Field -->
+                    <!-- Output Type Selection (moved to top for conditional logic) -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <div class="alert alert-info">
+                                <i class="fas fa-lightbulb me-2"></i>
+                                <strong>Quick Guide:</strong> Start by selecting your output type below.
+                                <strong>ZIP File</strong> is recommended for most users as it's the simplest option.
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.output_type.id_for_label }}" class="form-label">
+                                <i class="fas fa-cube me-1"></i>{{ form.output_type.label }}
+                                <span class="text-danger">*</span>
+                            </label>
+                            {{ form.output_type }}
+                            {% if form.output_type.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.output_type.errors.0 }}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">
+                                <strong>ZIP File:</strong> Downloadable archive (simplest)
+                                <br>
+                                <strong>Docker Image:</strong> Container image for deployment
+                            </div>
+                        </div>
                         <div class="col-md-6 mb-3">
                             <label for="{{ form.git_repository.id_for_label }}" class="form-label">
-                                {{ form.git_repository.label }}
+                                <i class="fab fa-git-alt me-1"></i>{{ form.git_repository.label }}
                                 <span class="text-danger">*</span>
                             </label>
                             {{ form.git_repository }}
@@ -31,43 +55,63 @@
                             {% endif %}
                             <div class="form-text">{{ form.git_repository.help_text }}</div>
                         </div>
+                    </div>
 
-                        <!-- Registry Field -->
-                        <div class="col-md-6 mb-3">
-                            <label for="{{ form.registry.id_for_label }}" class="form-label">
-                                {{ form.registry.label }}
-                                <span class="text-danger">*</span>
-                            </label>
-                            {{ form.registry }}
-                            {% if form.registry.errors %}
-                                <div class="invalid-feedback d-block">
-                                    {{ form.registry.errors.0 }}
+                    <!-- Docker-specific fields (shown only when Docker Image is selected) -->
+                    <div id="docker-fields" class="row mb-4" style="display: none;">
+                        <div class="col-12">
+                            <div class="card border-info">
+                                <div class="card-header bg-info text-white">
+                                    <i class="fab fa-docker me-2"></i>Docker Configuration
+                                    <small class="ms-2">(Only for Docker Image output)</small>
                                 </div>
-                            {% endif %}
-                            <div class="form-text">{{ form.registry.help_text }}</div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label for="{{ form.registry.id_for_label }}" class="form-label">
+                                                {{ form.registry.label }}
+                                                <span class="text-muted">(Optional)</span>
+                                            </label>
+                                            {{ form.registry }}
+                                            {% if form.registry.errors %}
+                                                <div class="invalid-feedback d-block">
+                                                    {{ form.registry.errors.0 }}
+                                                </div>
+                                            {% endif %}
+                                            <div class="form-text">
+                                                {{ form.registry.help_text }}
+                                                <br>
+                                                <small class="text-muted">Leave empty to build locally without pushing</small>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label for="{{ form.image_tag.id_for_label }}" class="form-label">
+                                                {{ form.image_tag.label }}
+                                                <span class="text-muted">(Optional)</span>
+                                            </label>
+                                            {{ form.image_tag }}
+                                            {% if form.image_tag.errors %}
+                                                <div class="invalid-feedback d-block">
+                                                    {{ form.image_tag.errors.0 }}
+                                                </div>
+                                            {% endif %}
+                                            <div class="form-text">
+                                                {{ form.image_tag.help_text }}
+                                                <br>
+                                                <small class="text-muted">Examples: latest, v1.0.0, my-custom-tag</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
-                    <div class="row">
-                        <!-- Output Type Field -->
-                        <div class="col-md-6 mb-3">
-                            <label for="{{ form.output_type.id_for_label }}" class="form-label">
-                                {{ form.output_type.label }}
-                                <span class="text-danger">*</span>
-                            </label>
-                            {{ form.output_type }}
-                            {% if form.output_type.errors %}
-                                <div class="invalid-feedback d-block">
-                                    {{ form.output_type.errors.0 }}
-                                </div>
-                            {% endif %}
-                            <div class="form-text">{{ form.output_type.help_text }}</div>
-                        </div>
-
-                        <!-- Branch Field -->
+                    <!-- Basic Configuration -->
+                    <div class="row mb-4">
                         <div class="col-md-6 mb-3">
                             <label for="{{ form.branch.id_for_label }}" class="form-label">
-                                {{ form.branch.label }}
+                                <i class="fas fa-code-branch me-1"></i>{{ form.branch.label }}
                                 <span class="text-danger">*</span>
                             </label>
                             {{ form.branch }}
@@ -76,30 +120,16 @@
                                     {{ form.branch.errors.0 }}
                                 </div>
                             {% endif %}
-                            <div class="form-text">{{ form.branch.help_text }}</div>
-                        </div>
-                    </div>
-
-                    <div class="row">
-                        <!-- Image Tag Field -->
-                        <div class="col-md-6 mb-3">
-                            <label for="{{ form.image_tag.id_for_label }}" class="form-label">
-                                {{ form.image_tag.label }}
-                                <span class="text-danger">*</span>
-                            </label>
-                            {{ form.image_tag }}
-                            {% if form.image_tag.errors %}
-                                <div class="invalid-feedback d-block">
-                                    {{ form.image_tag.errors.0 }}
-                                </div>
-                            {% endif %}
-                            <div class="form-text">{{ form.image_tag.help_text }}</div>
+                            <div class="form-text">
+                                {{ form.branch.help_text }}
+                                <br>
+                                <small class="text-muted">Common branches: main, master, develop</small>
+                            </div>
                         </div>
 
-                        <!-- Branding Template ID Field -->
                         <div class="col-md-6 mb-3">
                             <label for="{{ form.branding_template_id.id_for_label }}" class="form-label">
-                                {{ form.branding_template_id.label }}
+                                <i class="fas fa-palette me-1"></i>{{ form.branding_template_id.label }}
                             </label>
                             {{ form.branding_template_id }}
                             {% if form.branding_template_id.errors %}
@@ -107,67 +137,148 @@
                                     {{ form.branding_template_id.errors.0 }}
                                 </div>
                             {% endif %}
-                            <div class="form-text">{{ form.branding_template_id.help_text }}</div>
+                            <div class="form-text">
+                                {{ form.branding_template_id.help_text }}
+                                <br>
+                                <small class="text-muted">Optional: Choose a branding template to apply custom logos, colors, and styling</small>
+                            </div>
                         </div>
                     </div>
 
-                    <!-- Steps to Execute Field -->
-                    <div class="mb-3">
-                        <label for="{{ form.steps_to_execute.id_for_label }}" class="form-label">
-                            {{ form.steps_to_execute.label }}
+                    <!-- Pipeline Steps -->
+                    <div class="mb-4">
+                        <label class="form-label">
+                            <i class="fas fa-tasks me-1"></i>Pipeline Steps
                             <span class="text-danger">*</span>
                         </label>
-                        {{ form.steps_to_execute }}
-                        {% if form.steps_to_execute.errors %}
-                            <div class="invalid-feedback d-block">
-                                {{ form.steps_to_execute.errors.0 }}
+                        <div class="row">
+                            <!-- Always available steps -->
+                            <div class="col-md-6 mb-3">
+                                <div class="form-check">
+                                    <input type="checkbox" class="form-check-input" id="step_clone" name="checkbox_steps" value="clone"
+                                           onchange="updateStepsField()" checked>
+                                    <label class="form-check-label" for="step_clone">
+                                        <strong>Clone Repository</strong>
+                                        <br><small class="text-muted">Download and checkout the source code from Git</small>
+                                    </label>
+                                </div>
                             </div>
-                        {% endif %}
-                        <div class="form-text">{{ form.steps_to_execute.help_text }}</div>
+                            <div class="col-md-6 mb-3">
+                                <div class="form-check">
+                                    <input type="checkbox" class="form-check-input" id="step_brand" name="checkbox_steps" value="brand"
+                                           onchange="updateStepsField()" checked>
+                                    <label class="form-check-label" for="step_brand">
+                                        <strong>Apply Branding</strong>
+                                        <br><small class="text-muted">Apply custom logos, colors, and themes to the Open WebUI interface</small>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Docker-only steps -->
+                            <div class="col-md-6 mb-3" id="step-build-container" style="display: none;">
+                                <div class="form-check">
+                                    <input type="checkbox" class="form-check-input" id="step_build" name="checkbox_steps" value="build"
+                                           onchange="updateStepsField()" checked>
+                                    <label class="form-check-label" for="step_build">
+                                        <strong>Build Docker Image</strong>
+                                        <br><small class="text-muted">Create Docker container image with Open WebUI and customizations</small>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3" id="step-push-container" style="display: none;">
+                                <div class="form-check">
+                                    <input type="checkbox" class="form-check-input" id="step_push" name="checkbox_steps" value="push"
+                                           onchange="updateStepsField()">
+                                    <label class="form-check-label" for="step_push">
+                                        <strong>Push to Registry</strong>
+                                        <br><small class="text-muted">Upload the built Docker image to a container registry</small>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Always available steps -->
+                            <div class="col-md-6 mb-3">
+                                <div class="form-check">
+                                    <input type="checkbox" class="form-check-input" id="step_test" name="checkbox_steps" value="test"
+                                           onchange="updateStepsField()">
+                                    <label class="form-check-label" for="step_test">
+                                        <strong>Run Tests</strong>
+                                        <br><small class="text-muted">Execute automated tests to verify the build quality</small>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        <input type="hidden" name="steps_to_execute" id="steps-field" value='["clone", "brand"]'>
+                        <div class="form-text">
+                            <small class="text-muted">
+                                <strong>Recommended:</strong> Clone Repository + Apply Branding
+                                <br>
+                                <strong>For Docker Images:</strong> Also include Build Docker Image and Push to Registry
+                            </small>
+                        </div>
                     </div>
 
-                    <div class="row">
-                        <!-- Build Arguments Field -->
-                        <div class="col-md-6 mb-3">
-                            <label for="{{ form.build_arguments.id_for_label }}" class="form-label">
-                                {{ form.build_arguments.label }}
-                            </label>
-                            {{ form.build_arguments }}
-                            {% if form.build_arguments.errors %}
-                                <div class="invalid-feedback d-block">
-                                    {{ form.build_arguments.errors.0 }}
-                                </div>
-                            {% endif %}
-                            <div class="form-text">{{ form.build_arguments.help_text }}</div>
+                    <!-- Advanced Configuration -->
+                    <div class="card">
+                        <div class="card-header">
+                            <i class="fas fa-cog me-2"></i>Advanced Configuration
+                            <small class="text-muted ms-2">(Optional)</small>
                         </div>
-
-                        <!-- Environment Variables Field -->
-                        <div class="col-md-6 mb-3">
-                            <label for="{{ form.environment_variables.id_for_label }}" class="form-label">
-                                {{ form.environment_variables.label }}
-                            </label>
-                            {{ form.environment_variables }}
-                            {% if form.environment_variables.errors %}
-                                <div class="invalid-feedback d-block">
-                                    {{ form.environment_variables.errors.0 }}
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="{{ form.build_arguments.id_for_label }}" class="form-label">
+                                        <i class="fas fa-hammer me-1"></i>{{ form.build_arguments.label }}
+                                    </label>
+                                    {{ form.build_arguments }}
+                                    {% if form.build_arguments.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.build_arguments.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                    <div class="form-text">
+                                        {{ form.build_arguments.help_text }}
+                                        <br>
+                                        <small class="text-muted">Format: {"KEY": "value"}</small>
+                                    </div>
                                 </div>
-                            {% endif %}
-                            <div class="form-text">{{ form.environment_variables.help_text }}</div>
-                        </div>
-                    </div>
 
-                    <!-- Metadata Field -->
-                    <div class="mb-3">
-                        <label for="{{ form.metadata.id_for_label }}" class="form-label">
-                            {{ form.metadata.label }}
-                        </label>
-                        {{ form.metadata }}
-                        {% if form.metadata.errors %}
-                            <div class="invalid-feedback d-block">
-                                {{ form.metadata.errors.0 }}
+                                <div class="col-md-6 mb-3">
+                                    <label for="{{ form.environment_variables.id_for_label }}" class="form-label">
+                                        <i class="fas fa-globe me-1"></i>{{ form.environment_variables.label }}
+                                    </label>
+                                    {{ form.environment_variables }}
+                                    {% if form.environment_variables.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ form.environment_variables.errors.0 }}
+                                        </div>
+                                    {% endif %}
+                                    <div class="form-text">
+                                        {{ form.environment_variables.help_text }}
+                                        <br>
+                                        <small class="text-muted">Format: {"ENV_VAR": "value"}</small>
+                                    </div>
+                                </div>
                             </div>
-                        {% endif %}
-                        <div class="form-text">{{ form.metadata.help_text }}</div>
+
+                            <!-- Metadata Field -->
+                            <div class="mb-3">
+                                <label for="{{ form.metadata.id_for_label }}" class="form-label">
+                                    <i class="fas fa-tags me-1"></i>{{ form.metadata.label }}
+                                </label>
+                                {{ form.metadata }}
+                                {% if form.metadata.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.metadata.errors.0 }}
+                                    </div>
+                                {% endif %}
+                                <div class="form-text">
+                                    {{ form.metadata.help_text }}
+                                    <br>
+                                    <small class="text-muted">Format: {"key": "value"}</small>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Form Actions -->
@@ -195,9 +306,97 @@
 
 {% block extra_scripts %}
 <script>
+// Toggle Docker-specific fields and steps based on output type
+function toggleOutputFields() {
+    const outputType = document.getElementById('{{ form.output_type.id_for_label }}');
+    const dockerFields = document.getElementById('docker-fields');
+    const buildContainer = document.getElementById('step-build-container');
+    const pushContainer = document.getElementById('step-push-container');
+    const buildCheckbox = document.getElementById('step_build');
+    const pushCheckbox = document.getElementById('step_push');
+
+    if (outputType.value === 'docker_image') {
+        // Show Docker-specific fields and steps
+        dockerFields.style.display = 'block';
+        buildContainer.style.display = 'block';
+        pushContainer.style.display = 'block';
+
+        // Auto-check build step for Docker images
+        if (buildCheckbox && !buildCheckbox.checked) {
+            buildCheckbox.checked = true;
+        }
+
+        // Auto-check push step if registry is selected
+        const registryField = document.getElementById('registry-field');
+        if (pushCheckbox && registryField && registryField.value && !pushCheckbox.checked) {
+            pushCheckbox.checked = true;
+        }
+    } else {
+        // Hide Docker-specific fields and steps
+        dockerFields.style.display = 'none';
+        buildContainer.style.display = 'none';
+        pushContainer.style.display = 'none';
+
+        // Uncheck Docker-specific steps
+        if (buildCheckbox && buildCheckbox.checked) {
+            buildCheckbox.checked = false;
+        }
+        if (pushCheckbox && pushCheckbox.checked) {
+            pushCheckbox.checked = false;
+        }
+    }
+
+    // Update the hidden field after toggling
+    updateStepsField();
+}
+
+// Update repository info display (placeholder function)
+function updateRepositoryInfo() {
+    const repoSelect = document.getElementById('{{ form.git_repository.id_for_label }}');
+    const selectedOption = repoSelect.options[repoSelect.selectedIndex];
+    
+    // You could display additional repository info here
+    console.log('Selected repository:', selectedOption.text);
+}
+
+// Update hidden steps field with checkbox values
+function updateStepsField() {
+    const stepCheckboxes = document.querySelectorAll('input[name="checkbox_steps"]:checked');
+    const stepsField = document.getElementById('steps-field');
+    const selectedSteps = Array.from(stepCheckboxes).map(cb => cb.value);
+    stepsField.value = JSON.stringify(selectedSteps);
+}
+
 // Form validation for JSON fields
 document.querySelector('form').addEventListener('submit', function(e) {
+    // Update steps field before validation
+    updateStepsField();
+
     const jsonFields = ['{{ form.build_arguments.id_for_label }}', '{{ form.environment_variables.id_for_label }}', '{{ form.metadata.id_for_label }}'];
+
+    // Validate that at least one step is selected
+    const stepCheckboxes = document.querySelectorAll('input[name="checkbox_steps"]:checked');
+    if (stepCheckboxes.length === 0) {
+        alert('Please select at least one pipeline step to execute.');
+        e.preventDefault();
+        return false;
+    }
+
+    // Validate output type specific requirements
+    const outputType = document.getElementById('{{ form.output_type.id_for_label }}').value;
+    const registryField = document.getElementById('registry-field');
+    const imageTagField = document.getElementById('image-tag-field');
+
+    if (outputType === 'docker_image') {
+        // For Docker images, registry and image tag are strongly recommended but not required
+        if (!registryField.value && !imageTagField.value) {
+            const proceed = confirm('You are building a Docker image without specifying a registry or tag. The image will only be available locally. Continue?');
+            if (!proceed) {
+                e.preventDefault();
+                return false;
+            }
+        }
+    }
 
     for (const fieldId of jsonFields) {
         const field = document.getElementById(fieldId);
@@ -206,7 +405,7 @@ document.querySelector('form').addEventListener('submit', function(e) {
                 JSON.parse(field.value);
                 field.setCustomValidity('');
             } catch (error) {
-                field.setCustomValidity('This field must contain valid JSON');
+                field.setCustomValidity('This field must contain valid JSON\nExample: {"key": "value"}');
                 e.preventDefault();
                 return false;
             }
@@ -224,11 +423,32 @@ document.querySelector('form').addEventListener('submit', function(e) {
                     const parsed = JSON.parse(this.value);
                     this.value = JSON.stringify(parsed, null, 2);
                 } catch (error) {
-                    // Invalid JSON, leave as-is
+                    // Invalid JSON, show helpful message
+                    if (this.value.includes('{') || this.value.includes('"')) {
+                        this.setCustomValidity('Invalid JSON. Example: {"key": "value"}');
+                        this.reportValidity();
+                    }
                 }
             }
         });
+        
+        // Add input event to clear validation on typing
+        field.addEventListener('input', function() {
+            this.setCustomValidity('');
+        });
     }
+});
+
+// Initialize form state on page load
+document.addEventListener('DOMContentLoaded', function() {
+    toggleOutputFields();
+    updateStepsField();
+
+    // Add tooltips for better UX
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
 });
 </script>
 {% endblock %}
