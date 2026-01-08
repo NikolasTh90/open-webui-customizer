@@ -79,7 +79,7 @@
                                             <a href="{% url 'pipelines:detail' pipeline.pk %}" class="text-decoration-none fw-semibold">
                                                 {{ pipeline.git_repository.name }}
                                             </a>
-                                            <br><small class="text-muted">{{ pipeline.branch }} → {{ pipeline.registry.name }}</small>
+                                            <br><small class="text-muted">{{ pipeline.branch }}{% if pipeline.registry %} → {{ pipeline.registry.name }}{% endif %}</small>
                                         </div>
                                     </div>
                                 </td>

@@ -391,15 +391,28 @@ class PipelineRun(TimestampedMetadataModel):
     def get_execution_duration(self):
         """
         Get the total execution duration.
-        
+
         Returns:
             timedelta: Total execution time or None if not completed
         """
         if not self.started_at:
             return None
-        
+
         end_time = self.completed_at or timezone.now()
         return end_time - self.started_at
+
+    @property
+    def duration_seconds(self):
+        """
+        Get the execution duration in seconds.
+
+        Returns:
+            int: Duration in seconds or None if not started
+        """
+        duration = self.get_execution_duration()
+        if duration:
+            return int(duration.total_seconds())
+        return None
     
     @property
     def is_running(self):
